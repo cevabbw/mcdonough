@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daily Output</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root{
+  --bg:#eef2f7;--card:#ffffff;--card-border:#d5dfeb;--card-border-light:#c3d1e2;
+  --text:#0f1f35;--text-dim:#4a5f7a;--text-faint:#7589a3;
+  --accent:#e2231a;--info:#2f86cf;--good:#1f9d5a;--bad:#d11d15;
+  --header:#0a1626;--header-text:#e7eef7;--radius:10px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0a1626;--card:#12294c;--card-border:#1f3d61;--card-border-light:#2a4a73;
+    --text:#e7eef7;--text-dim:#93a8c4;--text-faint:#5f7796;
+    --info:#3d9fe8;--good:#2fbf71;--bad:#ff5a52;--header:#0a1626;--header-text:#e7eef7;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0a1626;--card:#12294c;--card-border:#1f3d61;--card-border-light:#2a4a73;
+  --text:#e7eef7;--text-dim:#93a8c4;--text-faint:#5f7796;
+  --info:#3d9fe8;--good:#2fbf71;--bad:#ff5a52;--header:#0a1626;--header-text:#e7eef7;
+  color-scheme:dark;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+*,*::before,*::after{box-sizing:inherit;}
+html{scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg);}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.wrap{max-width:1400px;margin:0 auto;padding:28px 28px 40px;}
+
+header.top{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;
+  background:linear-gradient(115deg,#0a1626 0%,#0f2447 55%,#1b3d7a 100%);color:var(--header-text);
+  margin:-28px -28px 26px;padding:24px 28px 26px;position:relative;}
+header.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;
+  background:linear-gradient(90deg,#e2231a 0 50%,#6f9be0 50% 100%);}
+.partner{display:flex;align-items:center;gap:14px;}
+.partner .x{width:1px;height:38px;background:#2a4a73;}
+.logo-ceva{height:38px;width:auto;display:block;}
+.logo-bbw{height:52px;width:auto;display:block;}
+@media (max-width:600px){.logo-ceva{height:30px;}.logo-bbw{height:42px;}}
+.bbw{font-family:Georgia,"Times New Roman",serif;color:#fff;line-height:1.05;font-size:17px;letter-spacing:.3px;}
+.bbw small{display:block;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:8.5px;letter-spacing:2.6px;color:#a9c3ee;margin-top:3px;}
+.brand .divider{width:1px;align-self:stretch;background:#2a4a73;margin:0 4px;}
+.brand{display:flex;align-items:center;gap:16px;}
+.wordmark{display:flex;flex-direction:column;line-height:1;flex-shrink:0;}
+.wordmark b{font-size:30px;font-weight:900;letter-spacing:1px;color:#fff;}
+.wordmark b span{color:var(--accent);}
+.wordmark small{font-size:8.5px;letter-spacing:3.2px;font-weight:700;color:#fff;margin-top:3px;text-align:right;}
+.brand h1{font-size:21px;margin:0;font-weight:800;}
+.brand .sub{color:#93a8c4;font-size:13px;margin-top:4px;}
+
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.datebox{display:flex;align-items:center;background:#122A47;border:1px solid #2a4a73;border-radius:8px;padding:3px;}
+.datebox button{background:transparent;border:none;color:#93a8c4;font-size:16px;width:34px;height:34px;border-radius:6px;cursor:pointer;}
+.datebox button:hover{color:#fff;background:#1f3d61;}
+input[type=date]{background:transparent;border:none;color:#e7eef7;font-size:14px;font-weight:600;padding:6px 6px;color-scheme:dark;font-family:inherit;}
+.btn{background:#122A47;border:1px solid #2a4a73;color:#e7eef7;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
+.btn:hover{border-color:#93a8c4;}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn.primary:hover{background:#c41d15;}
+button:focus-visible,input:focus-visible{outline:2px solid #3d9fe8;outline-offset:2px;}
+
+.dayline{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+.dayline h2{margin:0;font-size:24px;font-weight:800;}
+.dayline .meta{color:var(--text-dim);font-size:13px;}
+
+.tabs{display:flex;gap:6px;margin-bottom:24px;flex-wrap:wrap;}
+.tab{background:transparent;border:none;color:var(--text-dim);font-family:inherit;font-size:14px;font-weight:800;
+  letter-spacing:.6px;text-transform:uppercase;padding:12px 22px;border-radius:8px;cursor:pointer;}
+.tab:hover{color:var(--text);}
+.tab.active{background:var(--accent);color:#fff;}
+.kpi-grid{display:grid;grid-template-columns:repeat(var(--cols,2),1fr);gap:18px;margin-bottom:26px;}
+@media (max-width:1100px){.kpi-grid{grid-template-columns:repeat(min(var(--cols,2),2),1fr);}}
+@media (max-width:820px){.kpi-grid{grid-template-columns:1fr;}}
+.kpi-grid.three .kpi .value{font-size:44px;}
+.kpi .extra{font-size:12.5px;color:var(--text-dim);margin-top:8px;}
+.kpi .extra b{color:var(--text);font-variant-numeric:tabular-nums;}
+.chart-card.wide{grid-column:1/-1;}
+.charts-grid[hidden]{display:none;}
+.aside{margin:-12px 0 26px;font-size:13px;color:var(--text-dim);}
+.kpi-grid.three{--cols-max:4;}
+@media (min-width:1101px){.kpi-grid.three .kpi{padding:20px 20px 20px 24px;}}
+.kpi{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);
+  padding:22px 26px 22px 30px;position:relative;overflow:hidden;}
+.kpi::before{content:"";position:absolute;top:0;left:0;width:4px;height:100%;background:var(--kpi-accent,var(--accent));}
+.kpi .label{font-size:13px;color:var(--text-dim);font-weight:700;}
+.kpi .formula{font-size:11.5px;color:var(--text-faint);margin-top:3px;}
+.kpi .value{font-size:52px;font-weight:900;margin-top:10px;line-height:1;letter-spacing:-1px;font-variant-numeric:tabular-nums;}
+.kpi .unit{font-size:14px;color:var(--text-dim);font-weight:600;margin-left:6px;letter-spacing:0;}
+.shifts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px;padding-top:16px;border-top:1px solid var(--card-border);}
+.shift .s-label{font-size:12px;color:var(--text-faint);font-weight:600;display:flex;align-items:center;gap:6px;}
+.shift .s-label i{width:9px;height:9px;border-radius:2px;display:inline-block;}
+.shift .s-val{font-size:22px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums;}
+.shift .s-val.missing{color:var(--text-faint);font-size:14px;font-weight:600;padding-top:6px;}
+.compare{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:12.5px;color:var(--text-dim);}
+.compare b{font-variant-numeric:tabular-nums;}
+.up{color:var(--good);} .down{color:var(--bad);}
+
+.empty{background:var(--card);border:1px dashed var(--card-border-light);border-radius:var(--radius);
+  padding:34px;text-align:center;margin-bottom:26px;}
+.empty h3{margin:0 0 6px;font-size:17px;}
+.empty p{margin:0 0 16px;color:var(--text-dim);font-size:13.5px;}
+.empty .btn{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+.charts-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;}
+@media (max-width:1000px){.charts-grid{grid-template-columns:1fr;}}
+.chart-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:18px 18px 10px;}
+.chart-card h3{margin:0;font-size:14px;font-weight:700;}
+.chart-card .note{font-size:11.5px;color:var(--text-faint);margin:3px 0 10px;}
+.chart-holder{position:relative;height:260px;}
+
+.foot{margin-top:22px;color:var(--text-faint);font-size:12px;}
+.modal-back{position:fixed;inset:0;background:rgba(3,10,20,.72);display:flex;align-items:flex-start;justify-content:center;
+  padding:calc(40px + env(safe-area-inset-top,0px)) 16px 24px;z-index:20;overflow:auto;}
+.modal-back[hidden]{display:none;}
+.modal{background:var(--card);border:1px solid var(--card-border-light);border-radius:12px;width:100%;max-width:720px;padding:22px 24px;color:var(--text);}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.modal-head h3{margin:0;font-size:18px;}
+.close{background:transparent;border:none;color:var(--text-dim);font-size:26px;cursor:pointer;line-height:1;width:36px;height:36px;border-radius:6px;}
+.close:hover{color:var(--text);}
+.field{display:block;font-size:12.5px;font-weight:700;color:var(--text-dim);margin-bottom:12px;}
+.field span{font-weight:400;color:var(--text-faint);}
+.field input{display:block;width:100%;margin-top:6px;background:var(--bg);border:1px solid var(--card-border-light);color:var(--text);
+  border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;}
+.subj{margin-top:6px;font-size:14px;font-weight:600;color:var(--text);}
+.preview-wrap{background:#fff;border-radius:8px;max-height:46vh;overflow:auto;margin:6px 0 16px;}
+.preview-wrap.shot{background:var(--bg);padding:10px;}
+#emailPreview img{display:block;width:100%;height:auto;border-radius:6px;}
+.shot-wait{margin:30px 0;text-align:center;color:var(--text-dim);font-size:13px;}
+.modal-note b{color:var(--text-dim);}
+.modal-actions{display:flex;gap:10px;flex-wrap:wrap;}
+.modal-note{font-size:12px;color:var(--text-faint);margin:12px 0 0;line-height:1.5;}
+.btn.primary{color:#fff;}
+.am-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--card);
+  border:1px solid var(--card-border);border-radius:var(--radius);padding:12px 16px;margin-bottom:18px;font-size:13px;color:var(--text-dim);}
+.am-bar b{color:var(--text);}
+.am-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.am-bar .dirty{color:#e8a33d;font-weight:700;}
+.am-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:22px;align-items:start;}
+@media (max-width:1000px){.am-grid{grid-template-columns:1fr;}}
+.am-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:16px 20px 10px;}
+.am-card h3{margin:0 0 6px;font-size:15px;font-weight:800;display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+.am-card h3 small{font-size:12px;font-weight:600;color:var(--text-faint);}
+.am-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:8px 0;border-top:1px solid var(--card-border);font-size:13.5px;}
+.am-card h3 + .am-row{border-top:none;}
+.am-row .lbl{color:var(--text-dim);}
+.am-row .lbl small{display:block;font-size:11.5px;color:var(--text-faint);margin-top:2px;}
+.am-row .val{font-weight:800;font-variant-numeric:tabular-nums;text-align:right;}
+.am-row .val small{display:block;font-size:11.5px;font-weight:600;color:var(--text-faint);margin-top:2px;}
+.am-row.total .lbl{color:var(--text);font-weight:700;}
+.am-row.txt{grid-template-columns:minmax(110px,38%) 1fr;}
+.am-row.wide{grid-template-columns:1fr;}
+.am-row.txt .val,.am-row.wide .val{text-align:left;font-weight:500;}
+.am-row .miss{font-weight:600;color:var(--text-faint);font-size:12.5px;}
+.am-in{background:var(--bg);border:1px solid var(--card-border-light);color:var(--text);border-radius:6px;padding:7px 9px;
+  font-size:14px;font-family:inherit;width:120px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;}
+.am-in.txt,textarea.am-in{width:100%;text-align:left;font-weight:500;}
+textarea.am-in{min-height:58px;resize:vertical;line-height:1.4;}
+input.am-in[type=date]{background:var(--bg);color:var(--text);width:160px;font-size:14px;font-weight:600;padding:6px 8px;color-scheme:light dark;}
+.am-in:focus{outline:2px solid #3d9fe8;outline-offset:1px;}
+.am-in:disabled{opacity:.65;}
+.tag{font-size:10px;font-weight:700;letter-spacing:.3px;color:var(--text-faint);border:1px solid var(--card-border-light);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:1px;white-space:nowrap;}
+.am-pick{display:grid;grid-template-columns:minmax(0,1fr) 92px 92px;gap:6px 10px;align-items:center;padding:8px 0;border-top:1px solid var(--card-border);font-size:13.5px;}
+.am-pick .lbl{color:var(--text-dim);}
+.am-pick .am-in{width:92px;}
+.am-pick .h{font-size:11.5px;color:var(--text-faint);font-weight:700;text-align:right;}
+.am-pick .val{text-align:right;font-weight:800;font-variant-numeric:tabular-nums;}
+.am-row .txtv{white-space:pre-wrap;font-weight:500;color:var(--text);}
+.am-pick .vv{display:block;text-align:right;font-weight:800;font-variant-numeric:tabular-nums;}
+.am-row.txt .val .miss,.am-row.wide .val .miss{font-weight:500;}
+.u-act{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+.u-act .btn{padding:7px 12px;}
+.u-row{display:grid;grid-template-columns:minmax(0,1fr) 130px 150px;gap:8px 14px;align-items:center;padding:10px 0;border-top:1px solid var(--card-border);font-size:13.5px;}
+.u-row .who{min-width:0;}
+.u-row .who b{display:block;overflow:hidden;text-overflow:ellipsis;}
+.u-row .who small{display:block;font-size:11px;color:var(--text-faint);word-break:break-all;margin-top:2px;}
+.u-row select.am-in{width:130px;text-align:left;font-weight:600;}
+.u-row .btn.warn{border-color:var(--bad);color:var(--bad);}
+.u-form{display:grid;gap:10px;}
+.u-form .field{margin:0;}
+.u-form select.am-in,.u-form input.am-in{width:100%;text-align:left;font-weight:500;}
+@media (max-width:600px){.u-row{grid-template-columns:1fr;}.u-act{justify-content:flex-start;}}
+.wip-hi{color:var(--bad) !important;} .wip-ok{color:var(--good) !important;}
+@media (max-width:600px){.am-in{width:100px;}.am-pick{grid-template-columns:minmax(0,1fr) 80px 80px;}.am-pick .am-in{width:80px;}}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  background:#122A47;color:#e7eef7;border:1px solid #2a4a73;padding:10px 16px;border-radius:8px;font-size:13px;display:none;z-index:10;}
+@media (max-width:600px){
+  .wrap{padding:20px 16px 32px;}
+  header.top{margin:-20px -16px 20px;padding:18px 16px;}
+  .kpi .value{font-size:42px;}
+}
+</style>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, initializeAuth, inMemoryPersistence, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// Firebase web config. These values identify the project; they are not secrets.
+// Access is controlled by Firebase Authentication + the database rules (database.rules.json).
+const firebaseConfig = {
+  apiKey: "AIzaSyAEapIrGhOcpKuxCv-oIndQ3UD3q8PiYs0",
+  authDomain: "bbw-hub.firebaseapp.com",
+  databaseURL: "https://bbw-hub-default-rtdb.firebaseio.com",
+  projectId: "bbw-hub",
+  storageBucket: "bbw-hub.firebasestorage.app",
+  messagingSenderId: "447861225810",
+  appId: "1:447861225810:web:aafa4fc47e34721db3228b",
+  measurementId: "G-PGHE10E775"
+};
+const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getDatabase(app);
+window.FB = {
+  signIn: (email, pass) => signInWithEmailAndPassword(auth, email, pass),
+  signOut: () => signOut(auth),
+  resetPassword: email => sendPasswordResetEmail(auth, email),
+  // A new person creates their own sign-in; they see nothing until an admin approves them.
+  signUp: async (email, pass, name) => {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    if (name) await updateProfile(cred.user, { displayName: name }).catch(() => {});
+    return { uid: cred.user.uid, email: cred.user.email, name: name || cred.user.email };
+  },
+  listen: (path, next, err) => onValue(ref(db, path), snap => next(snap.val()), err),
+  write: (path, value) => set(ref(db, path), value),
+  // Creates a sign-in account without signing the admin out (needs "Enable create (sign-up)" on in Firebase).
+  createAccount: async (email, pass) => {
+    if (!window.__fbAdminAuth) window.__fbAdminAuth = initializeAuth(initializeApp(firebaseConfig, "account-maker"), { persistence: inMemoryPersistence });
+    const cred = await createUserWithEmailAndPassword(window.__fbAdminAuth, email, pass);
+    const uid = cred.user.uid; await signOut(window.__fbAdminAuth); return uid;
+  }
+};
+onAuthStateChanged(auth, u => window.dispatchEvent(new CustomEvent("fb-auth", {
+  detail: u ? { uid: u.uid, email: u.email, name: u.displayName || u.email } : null })));
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="partner">
+        <img class="logo-ceva" alt="CEVA Logistics" src="data:image/png;base64,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">
+        <span class="x" aria-hidden="true"></span>
+        <img class="logo-bbw" alt="Bath &amp; Body Works" src="data:image/png;base64,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">
+      </div>
+      <div class="divider" aria-hidden="true"></div>
+      <div>
+        <h1>Daily Output</h1>
+        <div class="sub">Daily inbound, LTFC and outbound output from the BBW Scorecard</div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="datebox">
+        <button type="button" id="prevDay" aria-label="Previous day">&#8249;</button>
+        <input type="date" id="datePick" aria-label="Select date">
+        <button type="button" id="nextDay" aria-label="Next day">&#8250;</button>
+      </div>
+      <button type="button" class="btn" id="todayBtn">Today</button>
+      <button type="button" class="btn" id="acctBtn">Sign in</button>
+      <button type="button" class="btn" id="emailBtn">&#9993;&nbsp; Email</button>
+      <button type="button" class="btn primary" id="uploadBtn">Load updated scorecard</button>
+      <input type="file" id="fileIn" accept=".xlsx,.xlsm,.xls" hidden>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button type="button" class="tab active" data-tab="sum" role="tab">Previous Day Recap</button>
+    <button type="button" class="tab" data-tab="am" role="tab">Current WIP</button>
+    <button type="button" class="tab" data-tab="ame" role="tab">WIP Entry</button>
+    <button type="button" class="tab" data-tab="ib" role="tab">Inbound</button>
+    <button type="button" class="tab" data-tab="ltfc" role="tab">LTFC</button>
+    <button type="button" class="tab" data-tab="ob" role="tab">Outbound</button>
+    <button type="button" class="tab" data-tab="users" role="tab" id="usersTab" hidden>Users</button>
+  </nav>
+
+  <div class="dayline">
+    <h2 id="dayTitle">&nbsp;</h2>
+    <div class="meta" id="dataMeta"></div>
+  </div>
+
+  <div id="dayContent"></div>
+
+  <section class="charts-grid" id="chartsSum">
+    <div class="chart-card wide">
+      <h3>Daily totals</h3>
+      <div class="note">Both shifts combined, 30 days ending on the selected date. Click a point to open that day.</div>
+      <div class="chart-holder" style="height:320px"><canvas id="sumChart"></canvas></div>
+    </div>
+  </section>
+  <section class="charts-grid" id="chartsIb" hidden>
+    <div class="chart-card">
+      <h3>Trailers unloaded by day</h3>
+      <div class="note">30 days ending on the selected date. Click a bar to open that day.</div>
+      <div class="chart-holder"><canvas id="trlChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Pallets received vs. putaway by day</h3>
+      <div class="note">Both shifts combined. Putaway above received means the floor is catching up.</div>
+      <div class="chart-holder"><canvas id="pairChart"></canvas></div>
+    </div>
+    <div class="chart-card wide">
+      <h3>Open PO issues by day</h3>
+      <div class="note">End-of-day count. Lower is better.</div>
+      <div class="chart-holder"><canvas id="poChart"></canvas></div>
+    </div>
+  </section>
+  <section class="charts-grid" id="chartsLtfc" hidden>
+    <div class="chart-card">
+      <h3>Reaches picked by day</h3>
+      <div class="note">30 days ending on the selected date. Click a bar to open that day.</div>
+      <div class="chart-holder"><canvas id="reachChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Units picked by day</h3>
+      <div class="note">30 days ending on the selected date. Click a bar to open that day.</div>
+      <div class="chart-holder"><canvas id="unitChart"></canvas></div>
+    </div>
+    <div class="chart-card wide">
+      <h3>Reaches per picking hour by day</h3>
+      <div class="note">Reaches picked divided by picking hours. The combined line weights each shift by its hours.</div>
+      <div class="chart-holder"><canvas id="rphChart"></canvas></div>
+    </div>
+  </section>
+  <section class="charts-grid" id="chartsOb" hidden>
+    <div class="chart-card">
+      <h3>Cartons sorted by day</h3>
+      <div class="note">30 days ending on the selected date. Click a bar to open that day.</div>
+      <div class="chart-holder"><canvas id="obChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Units picked by day</h3>
+      <div class="note">30 days ending on the selected date. Click a bar to open that day.</div>
+      <div class="chart-holder"><canvas id="obuChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Cartons invoiced by day</h3>
+      <div class="note">30 days ending on the selected date. Click a bar to open that day.</div>
+      <div class="chart-holder"><canvas id="invChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Cartons sorted per hour by day</h3>
+      <div class="note">Cartons sorted divided by hours worked. The combined line weights each shift by its hours.</div>
+      <div class="chart-holder"><canvas id="cphChart"></canvas></div>
+    </div>
+    <div class="chart-card wide">
+      <h3>Cartons label slapped</h3>
+      <div class="note">Days in the last 30 with label slapping. This doesn't happen every day.</div>
+      <div class="chart-holder"><canvas id="slapChart"></canvas></div>
+    </div>
+  </section>
+
+  <div class="foot" id="foot"></div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="modal-back" id="authModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="authTitle" style="max-width:440px">
+    <div class="modal-head"><h3 id="authTitle">Sign in to Daily Output</h3><button type="button" class="close" id="authClose" aria-label="Close">&times;</button></div>
+    <form id="authForm" novalidate>
+      <label class="field">Email<input type="email" id="authEmail" autocomplete="username" required></label>
+      <label class="field">Password<input type="password" id="authPass" autocomplete="current-password" required></label>
+      <p class="modal-note" id="authMsg" role="status"></p>
+      <div class="modal-actions">
+        <button type="submit" class="btn primary" id="authGo">Sign in</button>
+        <button type="button" class="btn" id="authReset">Forgot password</button>
+      </div>
+      <p class="modal-note" style="margin-top:16px">New here? <a href="#" id="toSignup" style="color:#6f9be0;font-weight:700">Request an account</a></p>
+    </form>
+    <form id="signupForm" novalidate hidden>
+      <p class="modal-note" style="font-size:13.5px;color:var(--text-dim);margin:0 0 12px">Create your sign-in, and a dashboard admin will approve it. You'll get in as soon as they do.</p>
+      <label class="field">Your name<input type="text" id="suName" autocomplete="name"></label>
+      <label class="field">Work email<input type="email" id="suEmail" autocomplete="username"></label>
+      <label class="field">Choose a password <span>(at least 6 characters)</span><input type="password" id="suPass" autocomplete="new-password"></label>
+      <label class="field">Type it again<input type="password" id="suPass2" autocomplete="new-password"></label>
+      <p class="modal-note" id="suMsg" role="status"></p>
+      <div class="modal-actions">
+        <button type="submit" class="btn primary" id="suGo">Request account</button>
+        <button type="button" class="btn" id="toSignin">Back to sign in</button>
+      </div>
+    </form>
+    <div id="authNoAccess" hidden>
+      <p class="modal-note" style="font-size:14px;color:var(--text)">You're signed in as <b id="naEmail"></b>, but this account isn't on the dashboard's access list yet.</p>
+      <p class="modal-note">Your request has been sent to the dashboard admins. This page opens on its own as soon as they approve it. If they ask for your account ID, it's:</p>
+      <div class="subj" id="naUid" style="word-break:break-all;margin:8px 0 16px"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn primary" id="naCopy">Copy ID</button>
+        <button type="button" class="btn" id="naOut">Sign out</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-back" id="emailModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="emailTitle">
+    <div class="modal-head">
+      <h3 id="emailTitle">Email this day's report</h3>
+      <button type="button" class="close" id="emailClose" aria-label="Close">&times;</button>
+    </div>
+    <label class="field">To <span>(optional, separate with ;)</span>
+      <input type="text" id="emailTo" placeholder="name@cevalogistics.com; ...">
+    </label>
+    <div class="field">Subject<div class="subj" id="emailSubj"></div></div>
+    <div class="preview-wrap shot"><div id="emailPreview"><p class="shot-wait">Taking a screenshot of the summary&hellip;</p></div></div>
+    <div class="modal-actions">
+      <button type="button" class="btn primary" id="emailOpen">Open in email app</button>
+      <button type="button" class="btn" id="emailCopy">Copy screenshot</button>
+      <button type="button" class="btn" id="emailSave" hidden>Download screenshot</button>
+    </div>
+    <p class="modal-note" id="emailNote"><b>Open in email app</b> copies the screenshot and starts a draft. When the draft opens, click in the body and press <b>Ctrl+V</b> to paste the screenshot.</p>
+  </div>
+</div>
+
+<script>
+const EMBEDDED = {};
+const EMBEDDED_LABEL = "";
+const STORE_KEY = "bbw-fb-scorecard-v1";
+
+const EMBEDDED_ABSENT = [];
+let DATA = EMBEDDED, SOURCE = EMBEDDED_LABEL, ABSENT = EMBEDDED_ABSENT;
+const lastKey = d => Object.keys(d||{}).sort().pop() || "";
+try{
+  const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+  if(saved && saved.data && Object.keys(saved.data).length && lastKey(saved.data) >= lastKey(EMBEDDED)){ DATA = saved.data; SOURCE = saved.label; ABSENT = saved.absent || []; }
+}catch(e){}
+
+const RPH_GOAL = 120;
+const C1 = "#6f9be0", C2 = "#e8a33d", CC = "#e2231a";
+const METRICS = {
+  reach:{name:"Reaches picked", sumName:"LTFC reaches picked", unit:"reaches", kind:"sum", keys:["l1","l2"],
+         formula:"LTFC 1st Reaches Picked + LTFC 2nd Reaches Picked", color:"#2fbf71"},
+  units:{name:"Units picked", unit:"units", kind:"sum", keys:["u1","u2"],
+         formula:"LTFC 1st Units Picked + LTFC 2nd Units Picked", color:"#6f9be0"},
+  rph:{name:"Reaches per hour (RPH)", unit:"per picking hr", kind:"rate", num:["l1","l2"], den:["h1","h2"],
+         numName:"reaches", formula:"Reaches picked \u00F7 picking hours only (support hours not included)", color:"#2fbf71", dec:1},
+  ob:{name:"Cartons sorted", sumName:"Outbound cartons sorted", unit:"cartons", kind:"sum", keys:["o1","o2"],
+         formula:"OB 1st Cartons Sorted + OB 2nd Cartons Sorted", color:"#6f9be0"},
+  cph:{name:"Cartons sorted per hour", unit:"per hr", kind:"rate", num:["o1","o2"], den:["oh1","oh2"],
+         numName:"cartons", formula:"Cartons sorted \u00F7 hours worked, both shifts", color:"#2fbf71", dec:1},
+  obu:{name:"Units picked", unit:"units", kind:"sum", keys:["ou1","ou2"],
+         formula:"OB 1st FC Units Picked + OB 2nd FC Units Picked", color:"#a78bfa"},
+  inv:{name:"Cartons invoiced", sumName:"Outbound cartons invoiced", unit:"cartons", kind:"sum", keys:["i1","i2"],
+         formula:"OB 1st Cartons Invoiced + OB 2nd Cartons Invoiced", color:"#e2231a"},
+  slap:{name:"Cartons label slapped", unit:"cartons", kind:"sum", keys:["s1","s2"], optional:true,
+         formula:"OB 1st + OB 2nd Cartons Label Slapped", color:"#e8a33d"}
+};
+METRICS.trl={name:"Trailers unloaded", unit:"trailers", kind:"sum", keys:["it1","it2"],
+  formula:"IB 1st Trailers Unloaded + IB 2nd Trailers Unloaded", color:"#6f9be0"};
+METRICS.rcv={name:"Pallets received", unit:"pallets", kind:"sum", keys:["ir1","ir2"],
+  formula:"IB 1st Pallets Received + IB 2nd Pallets Received", color:"#2fbf71"};
+METRICS.ptw={name:"Pallets putaway", unit:"pallets", kind:"sum", keys:["ip1","ip2"],
+  formula:"IB 1st Pallets Putaway + IB 2nd Pallets Putaway", color:"#a78bfa"};
+METRICS.po={name:"Open PO issues", unit:"open", kind:"snapshot", keys:["po1","po2"], lowerBetter:true,
+  formula:"Open at end of day: 2nd shift count, or 1st if 2nd is blank", color:"#e2231a"};
+const TABS = {sum:["ob","inv","reach"], ib:["trl","rcv","ptw","po"], ltfc:["reach","units","rph"], ob:["ob","cph","obu","inv","slap"]};
+const TAB_NAMES = {users:"users", am:"WIP", ame:"WIP", sum:"recap", ib:"inbound", ltfc:"LTFC", ob:"outbound"};
+let tab = "sum";
+
+const fmt = (n,dec=0) => n==null||!isFinite(n) ? "\u2014" : Number(n).toLocaleString("en-US",{minimumFractionDigits:dec,maximumFractionDigits:dec});
+const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const parseIso = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
+const addDays = (s,n) => { const d=parseIso(s); d.setDate(d.getDate()+n); return iso(d); };
+const longDate = s => parseIso(s).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+const shortDate = s => parseIso(s).toLocaleDateString("en-US",{month:"short",day:"numeric"});
+
+// value for one shift (s = 0 or 1)
+function shiftVal(rec,m,s){
+  if(!rec) return null;
+  if(m.kind!=="rate"){ const v=rec[m.keys[s]]; return v==null?null:v; }
+  const r=rec[m.num[s]], h=rec[m.den[s]];
+  return (r!=null && h>0) ? r/h : null;
+}
+function total(rec,m){
+  if(!rec) return null;
+  if(m.kind==="snapshot"){ const b=rec[m.keys[1]], a=rec[m.keys[0]]; return b!=null?b:(a!=null?a:null); }
+  if(m.kind==="sum"){
+    const a=rec[m.keys[0]], b=rec[m.keys[1]];
+    if(a==null && b==null) return null;
+    return (a||0)+(b||0);
+  }
+  return rateOf(rec,m.num,m.den);
+}
+function rateOf(rec,num,den){
+  if(!rec) return null; let r=0,h=0;
+  for(let s=0;s<2;s++){ if(rec[num[s]]!=null && rec[den[s]]>0){ r+=rec[num[s]]; h+=rec[den[s]]; } }
+  return h>0 ? r/h : null;
+}
+function sortedDates(){ return Object.keys(DATA).sort(); }
+function latestDate(){ const d=sortedDates(); return d[d.length-1]; }
+
+const pick = document.getElementById("datePick");
+function prevWorkday(d){ const x=parseIso(d); do{ x.setDate(x.getDate()-1); }while(x.getDay()===0||x.getDay()===6); return iso(x); }
+// The recap opens on the last working day (Monday shows Friday); a weekend day with numbers counts too.
+function recapDay(){ const t=iso(new Date()), pw=prevWorkday(t); return sortedDates().filter(x=>x>=pw&&x<t).pop()||pw; }
+let current = recapDay();
+
+function prevWithData(s,m){
+  const ds=sortedDates();
+  for(let i=ds.length-1;i>=0;i--){ if(ds[i]<s){ const t=total(DATA[ds[i]],m); if(t!=null && (t>0||m.kind==="snapshot")) return ds[i]; } }
+  return null;
+}
+function avg30(s,m){
+  const start=addDays(s,-30); const vals=[];
+  for(const d of sortedDates()){ if(d>=start && d<s){ const t=total(DATA[d],m); if(t!=null && (t>0||m.kind==="snapshot")) vals.push(t);} }
+  return vals.length ? vals.reduce((x,y)=>x+y,0)/vals.length : null;
+}
+function delta(cur,ref,m){
+  if(cur==null||ref==null) return "\u2014";
+  const good = d => (m&&m.lowerBetter) ? d<=0 : d>=0;
+  if(m && m.kind==="snapshot"){
+    const d=cur-ref; if(Math.abs(d)<0.05) return "<b>no change</b>";
+    return `<b class="${good(d)?"up":"down"}">${d>0?"\u25B2":"\u25BC"} ${fmt(Math.abs(d),Math.abs(d)%1?1:0)}</b>`;
+  }
+  if(ref===0) return "\u2014";
+  const p=(cur-ref)/ref*100;
+  return `<b class="${good(p)?"up":"down"}">${p>=0?"\u25B2":"\u25BC"} ${Math.abs(p).toFixed(1)}%</b>`;
+}
+
+function card(key,compact){
+  const m=METRICS[key], rec=DATA[current], t=total(rec,m), dec=m.dec||0;
+  const a=shiftVal(rec,m,0), b=shiftVal(rec,m,1);
+  const prev=prevWithData(current,m), prevT=prev?total(DATA[prev],m):null, av=avg30(current,m);
+  const shiftBox=(lbl,col,v,s)=>{
+    let sub="";
+    const k=m.kind==="rate"?m.num[s-1]:m.keys[s-1];
+    if(v==null && ABSENT.includes(k)) return `<div class="shift"><div class="s-label"><i style="background:${col}"></i>${lbl}</div>
+     <div class="s-val missing">Not tracked</div></div>`;
+    if(m.kind==="rate" && rec){ const h=rec[m.den[s-1]], n=rec[m.num[s-1]]; if(h>0 && n!=null) sub=`<div class="s-label" style="margin-top:3px">${fmt(n)} ${m.numName} / ${fmt(h,h%1?1:0)} hrs</div>`; }
+    return `<div class="shift"><div class="s-label"><i style="background:${col}"></i>${lbl}</div>
+     <div class="s-val${v==null?" missing":""}">${v==null?"Not entered":fmt(v,dec)}</div>${sub}</div>`;
+  };
+  let extra="";
+  const gl=(key==="reach"||key==="ob")?goalFor(current,key):null;
+  if(gl&&t!=null) extra+=`<div class="extra">Daily goal <b>${fmt(gl)}</b> &middot; <b class="${t>=gl?"up":"down"}">${Math.round(t/gl*100)}% of goal</b></div>`;
+  if(m.alt){ const tr=rateOf(rec,m.num,m.alt); extra=`<div class="extra">Using total hours (picking + support): <b>${fmt(tr,1)}</b> RPH</div>`; }
+  return `<div class="kpi" style="--kpi-accent:${m.color}">
+    <div class="label">${compact&&m.sumName?m.sumName:m.name}</div>
+    <div class="formula">${m.formula}</div>
+    <div class="value">${t==null?"\u2014":fmt(t,dec)}<span class="unit">${m.unit}</span></div>
+    ${extra}
+    ${compact?"":`<div class="shifts">${shiftBox("1st shift",C1,a,1)}${shiftBox("2nd shift",C2,b,2)}</div>`}
+    <div class="compare">
+      <span>vs ${prev?shortDate(prev):"prior day"} (${fmt(prevT,dec)}): ${t==null?"\u2014":delta(t,prevT,m)}</span>
+      <span>vs 30-day avg (${fmt(av,m.kind==="snapshot"?1:dec)}): ${t==null?"\u2014":delta(t,av,m)}</span>
+    </div>
+  </div>`;
+}
+
+function renderDay(){
+  pick.value=current;
+  document.getElementById("dayTitle").textContent=longDate(current);
+  const last=latestDate();
+  document.getElementById("dataMeta").textContent = last ? `Scorecard data through ${shortDate(last)}, ${last.slice(0,4)}` : "";
+  const box=document.getElementById("dayContent");
+  if(tab==="users"){ renderUsers(box); return; }
+  if(tab==="am"||tab==="ame"){ renderMorning(box,tab==="ame"); return; }
+  const keys=TABS[tab], rec=DATA[current];
+  const has = rec && keys.some(k=>total(rec,METRICS[k])!=null);
+  if(!has && !last){
+    box.innerHTML=`<div class="empty"><h3>No scorecard data yet</h3>
+      <p>${fbUser?"Nobody has loaded the scorecard yet. Click Load updated scorecard to share it with everyone.":"Sign in to see the shared scorecard."}</p></div>`;
+    return;
+  }
+  if(!has){
+    const wd=parseIso(current).getDay(), weekend=(wd===0||wd===6);
+    box.innerHTML=`<div class="empty"><h3>No ${TAB_NAMES[tab]} numbers entered for ${shortDate(current)}</h3>
+      <p>${weekend?"This is a weekend day. ":""}${current>last?"The loaded scorecard ends on "+shortDate(last)+". Load an updated scorecard to see newer days.":"Pick another date or jump to the latest day with numbers."}</p>
+      <button type="button" class="btn" id="jumpLatest">Show ${shortDate(last)}</button></div>`;
+    document.getElementById("jumpLatest").onclick=()=>{ current=last; render(); };
+  }else{
+    const shown=keys.filter(k=>!METRICS[k].optional || total(rec,METRICS[k])>0);
+    let note="";
+    for(const k of keys.filter(k=>METRICS[k].optional && !shown.includes(k))){
+      const m=METRICS[k], last=prevWithData(current,m);
+      note+=`<p class="aside">No ${m.name.toLowerCase()} on this date.${last?` Last time was ${shortDate(last)} (${fmt(total(DATA[last],m))} cartons).`:""}</p>`;
+    }
+    box.innerHTML=`<section class="kpi-grid ${shown.length>=3?"three":""}" style="--cols:${Math.min(Math.max(shown.length,2),4)}">${shown.map(k=>card(k,tab==="sum")).join("")}</section>${note}`;
+  }
+}
+
+const charts={};
+function chartColors(){
+  const cs=getComputedStyle(document.documentElement);
+  return {text:cs.getPropertyValue("--text-dim").trim(), grid:cs.getPropertyValue("--card-border").trim()};
+}
+function windowDays(m){
+  const days=[];
+  for(let i=29;i>=0;i--){ const d=addDays(current,-i); const t=total(DATA[d],m); if((t!=null && ((m.kind==="sum"&&!m.optional)||t>0)) || d===current) days.push(d); }
+  return days;
+}
+function renderChart(id,key){
+  const m=METRICS[key], days=windowDays(m), col=chartColors(), dec=m.dec||0;
+  const sel = d => d===current;
+  let cfg;
+  if(m.kind==="snapshot"){
+    cfg={type:"line",data:{labels:days.map(shortDate),datasets:[{label:"Open at end of day",data:days.map(d=>total(DATA[d],m)),
+      borderColor:m.color,backgroundColor:m.color,borderWidth:2.5,spanGaps:true,stepped:"middle",pointRadius:days.map(d=>sel(d)?6:3)}]},
+      nolegend:true};
+  }else if(m.kind==="sum"){
+    cfg={type:"bar",data:{labels:days.map(shortDate),datasets:[
+      {label:"1st shift",data:days.map(d=>shiftVal(DATA[d],m,0)??0),backgroundColor:days.map(d=>sel(d)?C1:C1+"99"),stack:"s",borderRadius:2},
+      {label:"2nd shift",data:days.map(d=>shiftVal(DATA[d],m,1)??0),backgroundColor:days.map(d=>sel(d)?C2:C2+"99"),stack:"s",borderRadius:2}]},
+      footer:items=>"Total: "+fmt(items.reduce((s,i)=>s+i.parsed.y,0))};
+  }else{
+    const line=(label,color,fn,w,order)=>({label,data:days.map(fn),borderColor:color,backgroundColor:color,borderWidth:w,spanGaps:true,tension:.25,order,
+      pointRadius:days.map(d=>sel(d)?6:3),pointHoverRadius:7});
+    cfg={type:"line",data:{labels:days.map(shortDate),datasets:[
+      line("Combined",CC,d=>total(DATA[d],m),3,3),
+      line("1st shift",C1,d=>shiftVal(DATA[d],m,0),2,1),
+      line("2nd shift",C2,d=>shiftVal(DATA[d],m,1),2,2)]}};
+    if(key==="rph") cfg.data.datasets.push({label:"Goal (120/hr)",data:days.map(()=>RPH_GOAL),borderColor:col.text,backgroundColor:col.text,
+      borderWidth:2,borderDash:[6,5],pointRadius:0,pointHoverRadius:0,tension:0,order:4});
+  }
+  if(charts[id]) charts[id].destroy();
+  charts[id]=new Chart(document.getElementById(id),{
+    type:cfg.type, data:cfg.data,
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:false,
+      interaction:{mode:"index",intersect:false},
+      onClick:(e,els)=>{ if(els.length){ current=days[els[0].index]; render(); } },
+      plugins:{
+        legend:{display:!cfg.nolegend,labels:{color:col.text,boxWidth:10,font:{size:11},sort:(a,b)=>a.datasetIndex-b.datasetIndex}},
+        tooltip:{itemSort:(a,b)=>a.datasetIndex-b.datasetIndex,callbacks:{label:i=>i.dataset.label+": "+fmt(i.parsed.y,dec), footer:cfg.footer||(()=>"")}}
+      },
+      scales:{
+        x:{stacked:m.kind==="sum",ticks:{color:col.text,font:{size:10},maxRotation:0,autoSkip:true},grid:{display:false}},
+        y:{stacked:m.kind==="sum",beginAtZero:true,ticks:{color:col.text,font:{size:10},precision:0,callback:v=>v>=1000?(v/1000)+"k":v},grid:{color:col.grid}}
+      }
+    }
+  });
+}
+
+function renderPairChart(id){
+  const r=METRICS.rcv, p=METRICS.ptw, col=chartColors();
+  const days=[]; for(let i=29;i>=0;i--){ const d=addDays(current,-i); if(total(DATA[d],r)!=null||total(DATA[d],p)!=null||d===current) days.push(d); }
+  const shade=(c,d)=>d===current?c:c+"99";
+  if(charts[id]) charts[id].destroy();
+  charts[id]=new Chart(document.getElementById(id),{type:"bar",
+    data:{labels:days.map(shortDate),datasets:[
+      {label:"Received",data:days.map(d=>total(DATA[d],r)),backgroundColor:days.map(d=>shade(r.color,d)),borderRadius:2},
+      {label:"Putaway",data:days.map(d=>total(DATA[d],p)),backgroundColor:days.map(d=>shade(p.color,d)),borderRadius:2}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:"index",intersect:false},
+      onClick:(e,els)=>{ if(els.length){ current=days[els[0].index]; render(); } },
+      plugins:{legend:{labels:{color:col.text,boxWidth:10,font:{size:11}}},
+        tooltip:{callbacks:{label:i=>i.dataset.label+": "+fmt(i.parsed.y)}}},
+      scales:{x:{ticks:{color:col.text,font:{size:10},maxRotation:0,autoSkip:true},grid:{display:false}},
+        y:{beginAtZero:true,ticks:{color:col.text,font:{size:10}},grid:{color:col.grid}}}}});
+}
+
+function renderSumChart(id){
+  const keys=TABS.sum, col=chartColors();
+  const days=[]; for(let i=29;i>=0;i--){ const d=addDays(current,-i); if(keys.some(k=>total(DATA[d],METRICS[k])!=null)||d===current) days.push(d); }
+  const colors={ob:"#6f9be0",inv:"#e2231a",reach:"#2fbf71"};
+  if(charts[id]) charts[id].destroy();
+  charts[id]=new Chart(document.getElementById(id),{type:"line",
+    data:{labels:days.map(shortDate),datasets:keys.map(k=>({label:METRICS[k].sumName,data:days.map(d=>total(DATA[d],METRICS[k])),
+      borderColor:colors[k],backgroundColor:colors[k],borderWidth:2.5,tension:.25,spanGaps:true,
+      pointRadius:days.map(d=>d===current?6:3),pointHoverRadius:7}))},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:"index",intersect:false},
+      onClick:(e,els)=>{ if(els.length){ current=days[els[0].index]; render(); } },
+      plugins:{legend:{labels:{color:col.text,boxWidth:10,font:{size:11}}},
+        tooltip:{callbacks:{label:i=>i.dataset.label+": "+fmt(i.parsed.y)}}},
+      scales:{x:{ticks:{color:col.text,font:{size:10},maxRotation:0,autoSkip:true},grid:{display:false}},
+        y:{beginAtZero:true,ticks:{color:col.text,font:{size:10},callback:v=>v>=1000?(v/1000)+"k":v},grid:{color:col.grid}}}}});
+}
+
+function render(){
+  renderDay();
+  document.getElementById("chartsSum").hidden = tab!=="sum";
+  document.getElementById("chartsIb").hidden = tab!=="ib";
+  document.getElementById("chartsLtfc").hidden = tab!=="ltfc";
+  document.getElementById("chartsOb").hidden = tab!=="ob";
+  if(window.Chart){
+    if(tab==="sum"){ renderSumChart("sumChart"); }
+    else if(tab==="ib"){ renderChart("trlChart","trl"); renderPairChart("pairChart"); renderChart("poChart","po"); }
+    else if(tab==="ltfc"){ renderChart("reachChart","reach"); renderChart("unitChart","units"); renderChart("rphChart","rph"); }
+    else if(tab==="ob"){ renderChart("obChart","ob"); renderChart("obuChart","obu"); renderChart("invChart","inv"); renderChart("cphChart","cph"); renderChart("slapChart","slap"); }
+  }
+  document.getElementById("foot").textContent=(SOURCE&&tab!=="users")?"Source: "+SOURCE+". Blank cells count as not entered, not zero.":"";
+}
+
+function setTab(t){
+  tab=t;
+  document.querySelectorAll(".tab").forEach(x=>{ const on=x.dataset.tab===t; x.classList.toggle("active",on); x.setAttribute("aria-selected",on); });
+  render();
+}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{ if(b.dataset.tab==="sum"&&tab!=="sum") current=recapDay(); else if((b.dataset.tab==="am"||b.dataset.tab==="ame")&&tab!=="am"&&tab!=="ame") current=iso(new Date()); setTab(b.dataset.tab); });
+pick.addEventListener("change",()=>{ if(pick.value){ current=pick.value; render(); } });
+document.getElementById("prevDay").onclick=()=>{ current=addDays(current,-1); render(); };
+document.getElementById("nextDay").onclick=()=>{ current=addDays(current,1); render(); };
+document.getElementById("todayBtn").onclick=()=>{ current=iso(new Date()); render(); };
+
+// ---- Load an updated scorecard (.xlsx) in the browser ----
+const ROWS = {
+  l1:/^LTFC 1st Reaches Picked$/i, l2:/^LTFC 2nd Reaches Picked$/i,
+  u1:/^LTFC 1st Units Picked$/i,   u2:/^LTFC 2nd Units Picked$/i,
+  h1:/^LTFC 1st Picking Hours$/i,  h2:/^LTFC 2nd Picking Hours$/i,
+  t1:/^LTFC 1st Total Hours$/i,    t2:/^LTFC 2nd Total Hours$/i,
+  o1:/^OB 1st Cartons Sorted$/i,   o2:/^OB 2nd Cartons Sorted$/i,
+  oh1:/^OB 1st (# )?Hours Worked$/i, oh2:/^OB 2nd (# )?Hours Worked$/i,
+  i1:/^OB 1st Cartons Invoiced$/i, i2:/^OB 2nd Cartons Invoiced$/i,
+  s1:/^OB 1st Cartons Label Slapped$/i, s2:/^OB 2nd Cartons Label Slapped$/i,
+  ou1:/^OB 1st FC Units Picked$/i, ou2:/^OB 2nd FC Units Picked$/i,
+  it1:/^IB 1st Trailers Unloaded$/i, it2:/^IB 2nd Trailers Unloaded$/i,
+  ir1:/^IB 1st Pallets Received$/i,  ir2:/^IB 2nd Pallets Received$/i,
+  ip1:/^IB 1st Pallets Putaway$/i,   ip2:/^IB 2nd Pallets Putaway$/i,
+  po1:/^IB 1st Open PO issues$/i,    po2:/^IB 2nd Open PO issues$/i,
+  lw1:/^LTFC 1st Reaches Waved @ EOS$/i, lw2:/^LTFC 2nd Reaches Waved @ EOS$/i,
+  ow1:/^OB 1st Reaches Waved @ EOS$/i,   ow2:/^OB 2nd Reaches Waved @ EOS$/i,
+  dz1:/^OB 1st DZ Reaches to sort$/i,    dz2:/^OB 2nd DZ Reaches to sort$/i,
+  st1:/^OB 1st Stat 30 Reaches to sort$/i, st2:/^OB 2nd Stat 30 Reaches to sort$/i,
+  ap1:/^IB 1st Scheduled Appts Next Day$/i, dr1:/^IB 1st Scheduled Drops Next Day$/i,
+  lf1:/^IB 1st Loads to Rcv\/Ptw on Floor$/i, pp1:/^IB 1st PP$/i,
+  lwu1:/^LTFC 1st Units Waved @ EOS$/i, lwu2:/^LTFC 2nd Units Waved @ EOS$/i,
+  owu1:/^OB 1st Units Waved @ EOS$/i,   owu2:/^OB 2nd Units Waved @ EOS$/i,
+  dzu1:/^OB 1st DZ Units to sort$/i,    dzu2:/^OB 2nd DZ Units to sort$/i
+};
+// End-of-day WIP rows: future days hold formula 0s, so a 0 here never counts as a day with data.
+const EOS_KEYS = ["lw1","lw2","ow1","ow2","dz1","dz2","st1","st2","ap1","dr1","lf1","pp1","lwu1","lwu2","owu1","owu2","dzu1","dzu2"];
+function toast(msg,ms){ const t=document.getElementById("toast"); t.textContent=msg; t.style.display="block"; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display="none",ms||5000); }
+// Scorecard v2: one row per day per shift on the Inbound, LTFC and Outbound tabs
+const V2 = {
+  LTFC:{l:"Reaches Picked", u:"Units Picked", h:"Picking Hours", sup:"Support Hours"},
+  Outbound:{o:"Cartons Sorted", oh:"Sorter Hours Worked", i:"Cartons Invoiced", s:"Cartons Label Slapped", ou:"FC Units Picked"},
+  Inbound:{it:"Trailers Unloaded", ir:"Pallets Received", ip:"Pallets Putaway", po:"Open PO Issues"}
+};
+function parseV2(wb){
+  const out={};
+  const norm=v=>String(v??"").replace(/\s+/g," ").trim().toLowerCase();
+  for(const sheet in V2){
+    const ws=wb.Sheets[sheet];
+    if(!ws) throw new Error("Couldn't find the "+sheet+" tab in this scorecard.");
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
+    let hr=rows.findIndex(r=>r && norm(r[0])==="date" && norm(r[1])==="shift");
+    if(hr<0) throw new Error("Couldn't find the Date / Shift headers on the "+sheet+" tab.");
+    const head=rows[hr].map(norm), col={};
+    for(const k in V2[sheet]){ const i=head.indexOf(norm(V2[sheet][k])); if(i<0) throw new Error(sheet+" tab is missing the column: "+V2[sheet][k]); col[k]=i; }
+    for(let r=hr+1;r<rows.length;r++){
+      const row=rows[r]; if(!row) continue;
+      const d=row[0], sh=norm(row[1]);
+      if(!(d instanceof Date) || (sh!=="1st" && sh!=="2nd")) continue;
+      const n=sh==="1st"?"1":"2";
+      const key=iso(new Date(d.getFullYear(),d.getMonth(),d.getDate()+(d.getHours()>=12?1:0)));
+      const rec=out[key]||{};
+      let any=false;
+      for(const k in col){
+        if(k==="sup") continue;
+        const v=row[col[k]];
+        if(typeof v==="number"){ rec[k+n]=v; any=true; }
+      }
+      if(sheet==="LTFC" && typeof row[col.h]==="number")
+        rec["t"+n]=row[col.h]+(typeof row[col.sup]==="number"?row[col.sup]:0);
+      if(any) out[key]=rec;
+    }
+  }
+  if(!Object.keys(out).length) throw new Error("No numbers found yet on the Inbound, LTFC or Outbound tabs.");
+  return out;
+}
+function parseWorkbook(buf){
+  const wb=XLSX.read(buf,{type:"array",cellDates:true});
+  if(wb.Sheets["Outbound"] && wb.Sheets["LTFC"] && wb.Sheets["Inbound"]) return {data:parseV2(wb), absent:[]};
+  const ws=wb.Sheets["Data"] || wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
+  const header=rows[0]||[];
+  const found={};
+  rows.forEach((r,i)=>{ const lbl=String(r[1]??"").replace(/\s+/g," ").trim().replace(/\s+(WH?14|DM ?Portal)$/i,"").trim();
+    for(const k in ROWS){ if(found[k]==null && ROWS[k].test(lbl)) found[k]=i; } });
+  const missing=Object.keys(ROWS).filter(k=>found[k]==null);
+  if(missing.length===Object.keys(ROWS).length) throw new Error("This doesn't look like the BBW Scorecard: none of the expected row labels are in column B.");
+  const out={};
+  for(let c=2;c<header.length;c++){
+    let d=header[c]; if(!(d instanceof Date)) continue;
+    const key=iso(new Date(d.getFullYear(),d.getMonth(),d.getDate()+(d.getHours()>=12?1:0)));
+    const rec={};
+    for(const k in found){ const v=rows[found[k]][c]; if(typeof v==="number") rec[k]=v; }
+    for(const s of ["1","2"]) if(rec["h"+s]==null) delete rec["t"+s];
+    if(Object.keys(rec).some(k=>k[0]!=="t" && (!EOS_KEYS.includes(k) || rec[k]>0))) out[key]=rec;
+  }
+  if(!Object.keys(out).length) throw new Error("No dated values found in row 1.");
+  return {data:out, absent:missing};
+}
+document.getElementById("uploadBtn").onclick=()=>document.getElementById("fileIn").click();
+document.getElementById("fileIn").addEventListener("change",async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    if(!window.XLSX) throw new Error("The spreadsheet reader didn't load. Check your connection and try again.");
+    const parsed=parseWorkbook(await f.arrayBuffer());
+    if(fbUser && lastKey(DATA) && lastKey(parsed.data) < lastKey(DATA))
+      throw new Error(`It ends on ${shortDate(lastKey(parsed.data))}, which is older than the shared scorecard (${shortDate(lastKey(DATA))}), so it wasn't loaded.`);
+    DATA=parsed.data; ABSENT=parsed.absent; SOURCE=f.name+", loaded "+new Date().toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})+(fbUser?" by "+fbUser.name:"");
+    try{ localStorage.setItem(STORE_KEY,JSON.stringify({data:DATA,label:SOURCE,absent:ABSENT})); }catch(err){}
+    const today=iso(new Date());
+    current = (tab==="am"||tab==="ame") ? today : tab==="sum" ? recapDay() : (DATA[today] ? today : latestDate());
+    render(); toast("Loaded "+f.name+": data through "+shortDate(latestDate())+".");
+    if(window.FB && fbUser && canWrite){
+      FB.write("scorecard",{data:DATA, absent:ABSENT, label:SOURCE, loadedAt:new Date().toISOString(), loadedBy:fbUser.name})
+        .then(()=>toast("Loaded and shared: everyone now sees data through "+shortDate(latestDate())+"."))
+        .catch(err=>toast("Loaded on this computer only. It couldn't be shared: "+err.message,12000));
+    } else if(fbUser){ toast("Loaded on this computer only: your account has view-only access.",9000); }
+  }catch(err){ toast("Couldn't load "+f.name+". "+err.message, 12000); }
+  e.target.value="";
+});
+
+// ---- Morning meeting: summary (view) and entry tabs ----
+const PLAN_FIELDS=["vet1","trn1","hrs1","vet2","trn2","hrs2","vetRate","trnRate","sorter1","sorter2","lsTeams","lsHours","lsRate"];
+const PLAN_DEFAULTS={vet1:"",trn1:0,hrs1:9.5,vet2:0,trn2:0,hrs2:7.5,vetRate:120,trnRate:60,sorter1:18000,sorter2:18000,lsTeams:0,lsHours:7.5,lsRate:360};
+let MORNING={}, mdb=null, muser=null, canWrite=null, amDate=null, amForm={}, amDrafts={}, draftBase={}, amUW={}, amSaving=false, amView=true;
+const num=v=>(v===""||v==null||!isFinite(+v))?null:+v;
+const nz=v=>num(v)||0;
+
+// The last scorecard day before d that has end-of-day WIP (a Monday reads Friday).
+function eosDay(d){
+  const ds=sortedDates();
+  for(let i=ds.length-1;i>=0;i--){ const s=ds[i], r=DATA[s]; if(s<d && r && ["lw1","lw2","ow1","ow2"].some(k=>r[k]>0)) return s; }
+  return null;
+}
+// 2nd shift is what's left at end of day, unless it's blank or 0.
+function autoFor(d){
+  const s=eosDay(d); if(!s) return null;
+  const r=DATA[s], n=v=>v==null?null:v, add=(...xs)=>xs.some(x=>x!=null)?xs.reduce((t,x)=>t+(x||0),0):null;
+  const ls=r.lw2>0?2:1, os=r.ow2>0?2:1;
+  const obW=n(r["ow"+os]), dz=n(r["dz"+os]), st=n(r["st"+os]);
+  const obWU=n(r["owu"+os]), dzU=n(r["dzu"+os]);
+  return {src:s, ltcShift:ls, obShift:os, ltcCarry:n(r["lw"+ls]), ltcCarryUnits:n(r["lwu"+ls]),
+    obWaved:obW, obDz:dz, obStat:st, obCarry:add(obW,dz,st),
+    obWavedUnits:obWU, obDzUnits:dzU, obCarryUnits:add(obWU,dzU),
+    lives:n(r.ap1), drops:n(r.dr1), loadsFloor:n(r.lf1), palletPP:n(r.pp1), poOpen:total(r,METRICS.po),
+    ltcPicked:total(r,METRICS.reach), obSorted:total(r,METRICS.ob), slapped:total(r,METRICS.slap),
+    unitsPrev:add(r.u1,r.u2,r.ou1,r.ou2)};
+}
+// Use the newer of: the live scorecard, or what was saved at the meeting (for viewers on older data).
+function autoView(d){ const live=autoFor(d), saved=MORNING[d]&&MORNING[d].auto; return (saved&&(!live||saved.src>live.src))?saved:live; }
+function goalsOf(f){
+  const ltc1=(nz(f.vet1)*nz(f.vetRate)+nz(f.trn1)*nz(f.trnRate))*nz(f.hrs1);
+  const ltc2=(nz(f.vet2)*nz(f.vetRate)+nz(f.trn2)*nz(f.trnRate))*nz(f.hrs2);
+  const ls=nz(f.lsTeams)*nz(f.lsHours)*nz(f.lsRate), sorter=nz(f.sorter1)+nz(f.sorter2);
+  return {ltc1, ltc2, ltc:ltc1+ltc2, ls, sorter, ob:sorter+ls};
+}
+function goalFor(d,key){ const g=MORNING[d]&&MORNING[d].goals; if(!g) return null; const v=key==="reach"?g.ltc:key==="ob"?g.sorter:null; return v>0?v:null; }
+// A new day starts with yesterday's staffing plan; daily counts start blank.
+function formFor(d){
+  if(amDrafts[d]) return amDrafts[d];
+  const s=MORNING[d]; if(s&&s.form&&Object.keys(s.form).length) return {...s.form};
+  const prev=Object.keys(MORNING).filter(k=>k<d&&MORNING[k].form&&num(MORNING[k].form.vet1)!=null).sort().pop();
+  const f={}; for(const k of PLAN_FIELDS) f[k]=prev?(MORNING[prev].form[k]??PLAN_DEFAULTS[k]):PLAN_DEFAULTS[k];
+  return f;
+}
+// The summary shows what's saved; the entry tab shows the draft being typed.
+function AF(){ return amView?((MORNING[current]&&MORNING[current].form)||{}):amForm; }
+function curUW(d){
+  if(!amView&&amUW[d]) return amUW[d];
+  const s=MORNING[d]; if(s&&s.unwaved) return s.unwaved;
+  const f=(!amView&&amDrafts[d])||(s&&s.form)||{};
+  return (num(f.ltcUnwaved)!=null||num(f.obUnwaved)!=null)?{ltcReaches:num(f.ltcUnwaved),obReaches:num(f.obUnwaved),legacy:true}:null;
+}
+function fIn(f,label,type){
+  const v=AF()[f]??"";
+  if(amView){
+    if(v===""||v==null) return '<span class="miss">&mdash;</span>';
+    if(type==="date") return esc(parseIso(String(v)).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}));
+    if(type==="area"||type==="text") return `<span class="txtv">${esc(v)}</span>`;
+    return `<span class="vv">${fmt(+v,(+v)%1?1:0)}</span>`;
+  }
+  const dis=(canWrite===false||!mdb)?" disabled":"";
+  if(type==="area") return `<textarea class="am-in" data-f="${f}" aria-label="${esc(label)}"${dis}>${esc(v)}</textarea>`;
+  const t=type==="text"?"text":type==="date"?"date":"number";
+  return `<input class="am-in${t==="text"?" txt":""}" data-f="${f}" type="${t}"${t==="number"?' inputmode="decimal" step="any" min="0"':''} value="${esc(v)}" aria-label="${esc(label)}"${dis}>`;
+}
+const TAG='<span class="tag">scorecard</span>', UWTAG='<span class="tag">unwaved report</span>';
+const cc=name=>`<span data-c="${name}">&mdash;</span>`;
+function amRow(label,val,cls,sub){ return `<div class="am-row${cls?" "+cls:""}"><div class="lbl">${label}${sub?`<small>${sub}</small>`:""}</div><div class="val">${val}</div></div>`; }
+function inRow(f,label,sub,type){ return amRow(label,fIn(f,label,type),type==="text"?"txt":"",sub); }
+function areaRow(f,label){ return `<div class="am-row wide"><div class="lbl">${label}</div><div class="val">${fIn(f,label,"area")}</div></div>`; }
+
+function renderMorning(box,entry){
+  const d=current;
+  amView=!entry;
+  if(entry&&amDate!==d){ amDate=d; amForm=formFor(d); }
+  const a=autoView(d), A=a||{}, F=AF(), uw=curUW(d), saved=MORNING[d];
+  const v=x=>x==null?'<span class="miss">not entered</span>':fmt(x);
+  const u=x=>x==null?"":`<small>${fmt(x)} units</small>`;
+  const shiftNote=s=>s===2?"2nd shift end of day":"1st shift end of day (2nd shift blank or 0)";
+  const pg=(a&&MORNING[a.src]&&MORNING[a.src].goals)||{};
+  const vsGoal=(act,g)=>(g>0&&act!=null)?`<small>goal ${fmt(g)} &middot; <b class="${act>=g?"up":"down"}">${Math.round(act/g*100)}%</b></small>`:"";
+  const pw=prevWorkday(d);
+  const stale=a&&a.src<pw;
+  let src=a?`Carryover and yesterday's results come from the scorecard's end of day for <b>${esc(longDate(a.src))}</b>.`+(stale?` <span class="dirty">${esc(longDate(pw))} isn't in the loaded scorecard yet, so these are older numbers. Click Load updated scorecard first.</span>`:"")
+           :`The loaded scorecard has no end-of-day WIP before ${esc(shortDate(d))}. Load an updated scorecard to fill the carryover.`;
+  if(uw&&!uw.legacy&&uw.file) src+=` Unwaved from <b>${esc(uw.file)}</b>${uw.loadedAt?", loaded "+esc(new Date(uw.loadedAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})):""}.`;
+  if(amView&&!saved) src+=` <span class="dirty">Today's WIP numbers haven't been saved yet.</span>`;
+  const actions=amView
+    ?`<span id="amStatus"></span><button type="button" class="btn" id="amEdit">Edit in WIP Entry</button>`
+    :`<span id="amStatus"></span><button type="button" class="btn" id="uwBtn"${(canWrite===false||!mdb)?" disabled":""}>Load unwaved report</button><input type="file" id="uwIn" accept=".xlsx,.xlsm,.xls" hidden><button type="button" class="btn primary" id="amSave"${(canWrite===false||!mdb)?" disabled":""}>Save WIP numbers</button>`;
+  const uwVal=(r,un)=>uw&&uw[r]!=null?fmt(uw[r])+u(uw[un]):(uw?'<span class="miss">not entered</span>':'<span class="miss">not loaded</span>');
+  const ttVal=(k,r,un)=>{ const t=uw&&uw["tt"+k]; return t?fmt(t[r])+u(t[un]):(uw&&!uw.legacy?`<span class="miss">load the report again to add TT ${k}</span>`:'<span class="miss">not loaded</span>'); };
+  const ttTot=k=>{ const t=uw&&uw["tt"+k]; return t?fmt(t.ltcReaches+t.obReaches)+u(t.ltcUnits+t.obUnits):'<span class="miss">&mdash;</span>'; };
+  const ttCard=k=>`<div class="am-card"><h3>TT ${k} unwaved</h3>
+      ${amRow("LTC"+UWTAG,ttVal(k,"ltcReaches","ltcUnits"),"","LTC reaches + NCV FC reaches, TT "+k)}
+      ${amRow("Outbound"+UWTAG,ttVal(k,"obReaches","obUnits"),"","FC reaches, all DTs except NCV, TT "+k)}
+      ${amRow("Total TT "+k,ttTot(k),"total")}
+    </div>`;
+  const uwSub=which=>uw&&uw.legacy?"Typed in before the report upload was added":(which==="ltc"?"LTC reaches + NCV FC reaches":"FC reaches, all DTs except NCV");
+  box.innerHTML=`
+  <div class="am-bar"><div>${src}</div><div class="am-actions">${actions}</div></div>
+  <section class="kpi-grid three" style="--cols:4">
+    <div class="kpi" style="--kpi-accent:#2fbf71"><div class="label">LTC work in progress</div><div class="formula">Reaches waved @ EOS + unwaved</div>
+      <div class="value">${cc("ltcTotal")}<span class="unit">reaches</span></div><div class="extra"><b data-c="ltcTotalU">&mdash;</b> units &middot; <b data-c="ltcDays">&mdash;</b> days of WIP</div></div>
+    <div class="kpi" style="--kpi-accent:#2fbf71"><div class="label">LTC goal today</div><div class="formula">Pickers &times; rate &times; hours, both shifts</div>
+      <div class="value">${cc("ltcGoal")}<span class="unit">reaches</span></div><div class="extra">1st shift <b data-c="ltcGoal1">&mdash;</b> &middot; 2nd shift <b data-c="ltcGoal2">&mdash;</b></div></div>
+    <div class="kpi" style="--kpi-accent:#6f9be0"><div class="label">Outbound work in progress</div><div class="formula">Carryover (waved @ EOS + DZ + Stat 30) + unwaved</div>
+      <div class="value">${cc("obTotal")}<span class="unit">reaches</span></div><div class="extra"><b data-c="obTotalU">&mdash;</b> units &middot; <b data-c="obDays">&mdash;</b> days of WIP</div></div>
+    <div class="kpi" style="--kpi-accent:#6f9be0"><div class="label">Outbound capacity today</div><div class="formula">Sorter, both shifts + label slap</div>
+      <div class="value">${cc("obCap")}<span class="unit">cartons</span></div><div class="extra">Sorter <b data-c="sorterCap">&mdash;</b> &middot; label slap <b data-c="lsCap">&mdash;</b></div></div>
+  </section>
+  <div class="am-grid">
+    <div class="am-card"><h3>LTC</h3>
+      ${amRow("Reaches waved @ EOS"+TAG,v(A.ltcCarry)+u(A.ltcCarryUnits),"",a?shiftNote(a.ltcShift):"")}
+      ${amRow("Unwaved"+UWTAG,uwVal("ltcReaches","ltcUnits"),"",uwSub("ltc"))}
+      ${amRow("Total WIP",cc("ltcTotal")+`<small><span data-c="ltcTotalU">&mdash;</span> units</small>`,"total")}
+      ${amRow("Days of WIP",cc("ltcDays"),"","Reaches &divide; today's goal. Plan a strategy if over 3")}
+      <div class="am-pick"><div></div><div class="h">1st shift</div><div class="h">2nd shift</div>
+        <div class="lbl">Veteran pickers</div>${fIn("vet1","Veteran pickers, 1st shift")}${fIn("vet2","Veteran pickers, 2nd shift")}
+        <div class="lbl">Trainee pickers</div>${fIn("trn1","Trainee pickers, 1st shift")}${fIn("trn2","Trainee pickers, 2nd shift")}
+        <div class="lbl">Hours</div>${fIn("hrs1","Hours, 1st shift")}${fIn("hrs2","Hours, 2nd shift")}
+        <div class="lbl">Expected reaches</div><div class="val">${cc("ltcGoal1")}</div><div class="val">${cc("ltcGoal2")}</div></div>
+      ${inRow("vetRate","Veteran rate","Reaches per hour")}
+      ${inRow("trnRate","Trainee rate","Reaches per hour")}
+      ${amRow("Goal today",cc("ltcGoal"),"total")}
+      ${inRow("ltcPriority","Priority TTs worked / WIP","","text")}
+    </div>
+    <div class="am-card"><h3>Outbound</h3>
+      ${amRow("Reaches waved @ EOS"+TAG,v(A.obWaved)+u(A.obWavedUnits),"",a?shiftNote(a.obShift):"")}
+      ${amRow("DZ reaches to sort"+TAG,v(A.obDz)+u(A.obDzUnits))}
+      ${amRow("Stat 30 reaches to sort"+TAG,v(A.obStat),"","The scorecard has no Stat 30 units")}
+      ${amRow("Carryover to pick",v(A.obCarry)+u(A.obCarryUnits),"total","Waved + DZ + Stat 30")}
+      ${amRow("Unwaved"+UWTAG,uwVal("obReaches","obUnits"),"",uwSub("ob"))}
+      ${amRow("Total WIP",cc("obTotal")+`<small><span data-c="obTotalU">&mdash;</span> units</small>`,"total")}
+      ${amRow("Days of WIP",cc("obDays"),"","Reaches &divide; today's capacity. Plan a strategy if over 3")}
+      ${inRow("obTasks","# Tasks")}
+      ${inRow("sorter1","Sorter capacity, 1st shift","Cartons")}
+      ${inRow("sorter2","Sorter capacity, 2nd shift","Cartons")}
+      ${inRow("obPriority","Priority TT / ISD","","text")}
+      ${inRow("latePickup","Late pickup alerts","","text")}
+      ${inRow("trailerNeeds","Trailer needs","","text")}
+    </div>
+    ${ttCard("85")}
+    ${ttCard("90")}
+    <div class="am-card"><h3>Inbound</h3>
+      ${amRow("Lives (scheduled appointments)"+TAG,v(A.lives))}
+      ${amRow("Drops"+TAG,v(A.drops))}
+      ${inRow("containers","Containers")}
+      ${amRow("Loads to receive / put away on floor"+TAG,v(A.loadsFloor))}
+      ${amRow("Pallets PP"+TAG,v(A.palletPP))}
+      ${amRow("Open PO issues"+TAG,v(A.poOpen))}
+      ${inRow("oldestPO","Oldest open PO date","","date")}
+      ${inRow("oldestWorked","Oldest date being worked","","date")}
+      ${inRow("oldestReason","Reason, if over 48 hours","","text")}
+    </div>
+    <div class="am-card"><h3>Label slap</h3>
+      ${inRow("lsCartons","Cartons to slap today")}
+      ${inRow("lsTeams","Teams","3 people per team")}
+      ${inRow("lsHours","Hours")}
+      ${inRow("lsRate","Cartons per team per hour")}
+      ${amRow("Expected output",cc("lsCap"),"total")}
+      ${inRow("lsLoadsReady","Loads ready to load out")}
+      ${inRow("lsConcerns","Load concerns","","text")}
+    </div>
+    <div class="am-card"><h3>Yesterday<small>${a?esc(longDate(a.src)):""}</small></h3>
+      ${amRow("LTFC reaches picked"+TAG,v(A.ltcPicked)+vsGoal(A.ltcPicked,pg.ltc))}
+      ${amRow("Cartons sorted"+TAG,v(A.obSorted)+vsGoal(A.obSorted,pg.sorter))}
+      ${amRow("Cartons label slapped"+TAG,v(A.slapped))}
+      ${amRow("Units picked"+TAG,v(A.unitsPrev),"","LTFC + OB FC, both shifts")}
+      ${inRow("laborHours","Labor hours")}
+      ${amRow("UPH",cc("uph"),"total","Units picked &divide; labor hours")}
+      ${areaRow("wentWell","What went well")}
+      ${areaRow("struggles","What didn't go well / struggles that affected UPH")}
+    </div>
+    <div class="am-card"><h3>Building</h3>
+      ${inRow("sb2","SB2","","text")}
+      ${inRow("fedex","FedEx","","text")}
+      ${inRow("bbwd","BBWD","","text")}
+      ${inRow("bia","BIA","","text")}
+      ${inRow("w2w","W2W","","text")}
+      ${inRow("nonDa","Other non-DA loads","","text")}
+      ${inRow("loadPlanning","Load planning","","text")}
+    </div>
+    <div class="am-card"><h3>Storage capacity</h3>
+      ${inRow("locOnHand","Total locations on hand")}
+      ${inRow("palletPos","Total pallet positions on hand")}
+      ${inRow("availSingle","Available single locations")}
+      ${inRow("availMulti","Available multi-pallet locations")}
+      ${inRow("availPallet","Available pallet positions (&gt;1)")}
+      ${amRow("Pallet positions filled",cc("filled"),"total","Locations &minus; available single &minus; available multi")}
+      ${amRow("% full",cc("storPct"),"total","Filled &divide; pallet positions")}
+    </div>
+    <div class="am-card"><h3>Yard</h3>
+      ${inRow("yardPos","Trailer positions on yard","Includes trailers for active OB loads")}
+      ${inRow("yardTrailers","Physical trailers on yard","Empty and loaded")}
+      ${amRow("Available yard spots",cc("yardAvail"),"total")}
+      ${amRow("% full",cc("yardPct"),"total")}
+      ${inRow("ibEmpties","IB empties (non-pool)")}
+      ${inRow("yardNote","Notes","","text")}
+    </div>
+  </div>`;
+  if(amView){
+    document.getElementById("amEdit").onclick=()=>setTab("ame");
+  }else{
+    box.querySelectorAll(".am-in").forEach(el=>el.addEventListener("input",()=>{
+      const f=el.dataset.f; amForm[f]=el.type==="number"?(el.value===""?"":+el.value):el.value;
+      markDraft(current); updateComputed(); amStatus();
+    }));
+    document.getElementById("amSave").onclick=saveMorning;
+    document.getElementById("uwBtn").onclick=()=>document.getElementById("uwIn").click();
+    document.getElementById("uwIn").addEventListener("change",loadUnwaved);
+  }
+  updateComputed(); amStatus();
+}
+function markDraft(d){ if(!amDrafts[d]){ amDrafts[d]=amForm; draftBase[d]=MORNING[d]&&MORNING[d].savedAt; } }
+function setC(name,text,cls){ document.querySelectorAll(`[data-c="${name}"]`).forEach(el=>{ el.textContent=text; el.classList.remove("wip-hi","wip-ok"); if(cls) el.classList.add(cls); }); }
+function updateComputed(){
+  if(tab!=="am"&&tab!=="ame") return;
+  const a=autoView(current)||{}, f=AF(), g=goalsOf(f), uw=curUW(current)||{};
+  const both=(x,y)=>(x==null||y==null)?null:x+y;
+  const days=(name,tot,cap)=>{ if(tot==null||!(cap>0)) return setC(name,"—"); const dd=tot/cap; setC(name,dd.toFixed(1),dd>3?"wip-hi":"wip-ok"); };
+  const ltcTot=both(a.ltcCarry,uw.ltcReaches), obTot=both(a.obCarry,uw.obReaches);
+  setC("ltcTotal",fmt(ltcTot)); setC("ltcTotalU",fmt(both(a.ltcCarryUnits,uw.ltcUnits))); days("ltcDays",ltcTot,g.ltc);
+  setC("ltcGoal",fmt(g.ltc)); setC("ltcGoal1",fmt(g.ltc1)); setC("ltcGoal2",fmt(g.ltc2));
+  setC("obTotal",fmt(obTot)); setC("obTotalU",fmt(both(a.obCarryUnits,uw.obUnits))); days("obDays",obTot,g.ob);
+  setC("obCap",fmt(g.ob)); setC("sorterCap",fmt(g.sorter)); setC("lsCap",fmt(g.ls));
+  const lh=num(f.laborHours); setC("uph",(a.unitsPrev!=null&&lh>0)?fmt(a.unitsPrev/lh):"—");
+  const loc=num(f.locOnHand), sg=num(f.availSingle), mu=num(f.availMulti), pp=num(f.palletPos);
+  const filled=(loc!=null&&sg!=null&&mu!=null)?loc-sg-mu:null;
+  setC("filled",fmt(filled)); setC("storPct",(filled!=null&&pp>0)?Math.round(filled/pp*100)+"%":"—");
+  const yp=num(f.yardPos), yt=num(f.yardTrailers);
+  setC("yardAvail",(yp!=null&&yt!=null)?fmt(yp-yt):"—"); setC("yardPct",(yp>0&&yt!=null)?Math.round(yt/yp*100)+"%":"—");
+}
+function amStatus(){
+  const el=document.getElementById("amStatus"); if(!el) return;
+  const d=current, s=MORNING[d];
+  if(!amView){
+    if(!mdb){ el.textContent="Sign in to save."; return; }
+    if(canWrite===false){ el.textContent="View only. Ask the dashboard owner for edit access."; return; }
+    if(amDrafts[d]){
+      const other=s&&s.savedAt&&s.savedAt!==draftBase[d];
+      el.innerHTML='<span class="dirty">Unsaved changes</span>'+(other?" &middot; someone else saved this day since you started; saving replaces theirs":"");
+      return;
+    }
+  }
+  if(s&&s.savedAt){
+    const t=new Date(s.savedAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+    el.textContent="Saved "+t+(s.seededFrom?" from the "+s.seededFrom:"");
+    if(s.savedBy&&muser) muser.profiles([s.savedBy]).then(ps=>{ const n=ps&&ps[s.savedBy]&&ps[s.savedBy].name; if(n&&el.isConnected&&current===d&&(amView||!amDrafts[d])) el.textContent="Saved "+t+" by "+n; }).catch(()=>{});
+    return;
+  }
+  el.textContent=amView?"":"Not saved yet for this day.";
+}
+// Unwaved detail report: LTC = LTC reaches + NCV FC reaches; Outbound = FC reaches for every DT except NCV.
+// The same split is also kept for TT 90 on its own.
+function uwSplit(t){ return {ltcReaches:t.lr+t.nr, ltcUnits:t.lu+t.nu, obReaches:t.fr-t.nr, obUnits:t.fu-t.nu}; }
+function uwAdd(t,dt,fr,fu,lr,lu){ t.fr+=fr; t.fu+=fu; t.lr+=lr; t.lu+=lu; if(dt==="NCV"){ t.nr+=fr; t.nu+=fu; } }
+const uwZero=()=>({fr:0,fu:0,lr:0,lu:0,nr:0,nu:0});
+const cellNum=v=>typeof v==="number"?v:0;
+function parseUnwaved(wb){
+  // 1) the detail rows (qryUnwavedDetail / Sheet1): exact column names
+  for(const name of wb.SheetNames){
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:null});
+    const hr=rows.findIndex(r=>r&&r.some(c=>String(c??"").trim()==="DT")&&r.some(c=>String(c??"").trim()==="LTCReaches"));
+    if(hr<0) continue;
+    const h=rows[hr].map(c=>String(c??"").trim()), ix=k=>h.indexOf(k);
+    if(["FCReaches","FCUnits","LTCReaches","LTCUnits"].some(k=>ix(k)<0)) continue;
+    const all=uwZero(), t90=uwZero(), t85=uwZero(); let n=0;
+    for(let i=hr+1;i<rows.length;i++){
+      const r=rows[i]; if(!r) continue;
+      const dt=String(r[ix("DT")]??"").trim().toUpperCase(); if(!dt) continue; // skips the typed-in totals row
+      const g=k=>cellNum(r[ix(k)]); n++;
+      uwAdd(all,dt,g("FCReaches"),g("FCUnits"),g("LTCReaches"),g("LTCUnits"));
+      const tt=ix("TT")>=0?String(r[ix("TT")]??"").trim():"";
+      if(tt==="90") uwAdd(t90,dt,g("FCReaches"),g("FCUnits"),g("LTCReaches"),g("LTCUnits"));
+      if(tt==="85") uwAdd(t85,dt,g("FCReaches"),g("FCUnits"),g("LTCReaches"),g("LTCUnits"));
+    }
+    if(!n) throw new Error("The report has no detail rows.");
+    return {...uwSplit(all), rows:n, tt90:ix("TT")>=0?uwSplit(t90):null, tt85:ix("TT")>=0?uwSplit(t85):null, from:name};
+  }
+  // 2) only the pivot ("Pivot Table"): DT is filled in on the first row of each group
+  for(const name of wb.SheetNames){
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:null});
+    const low=c=>String(c??"").trim().toLowerCase();
+    const hr=rows.findIndex(r=>r&&r.some(c=>low(c)==="dt")&&r.some(c=>low(c)==="sum of ltcreaches"));
+    if(hr<0) continue;
+    const h=rows[hr].map(low), ix=k=>h.indexOf(k);
+    const c={dt:ix("dt"),tt:ix("tt"),fr:ix("sum of fcreaches"),fu:ix("sum of fcunits"),lr:ix("sum of ltcreaches"),lu:ix("sum of ltcunits")};
+    if(Object.values(c).some(i=>i<0)) continue;
+    const all=uwZero(), t90=uwZero(), t85=uwZero(); let dt="", n=0;
+    for(let i=hr+1;i<rows.length;i++){
+      const r=rows[i]; if(!r) continue;
+      const first=String(r[c.dt]??"").trim();
+      if(/^grand total$/i.test(first)) break;
+      if(first) dt=first.toUpperCase();
+      const tt=String(r[c.tt]??"").trim(); if(!tt||!dt) continue;
+      n++; uwAdd(all,dt,cellNum(r[c.fr]),cellNum(r[c.fu]),cellNum(r[c.lr]),cellNum(r[c.lu]));
+      if(tt==="90") uwAdd(t90,dt,cellNum(r[c.fr]),cellNum(r[c.fu]),cellNum(r[c.lr]),cellNum(r[c.lu]));
+      if(tt==="85") uwAdd(t85,dt,cellNum(r[c.fr]),cellNum(r[c.fu]),cellNum(r[c.lr]),cellNum(r[c.lu]));
+    }
+    if(!n) continue;
+    return {...uwSplit(all), rows:n, tt90:uwSplit(t90), tt85:uwSplit(t85), from:name};
+  }
+  throw new Error("Couldn't find the unwaved detail columns (DT, TT, FCReaches, FCUnits, LTCReaches, LTCUnits) or the pivot table.");
+}
+async function loadUnwaved(e){
+  const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  try{
+    if(!window.XLSX) throw new Error("The spreadsheet reader didn't load. Check your connection and try again.");
+    const r=parseUnwaved(XLSX.read(await f.arrayBuffer(),{type:"array"}));
+    const d=current;
+    amUW[d]={...r, file:f.name, loadedAt:new Date().toISOString()};
+    delete amForm.ltcUnwaved; delete amForm.obUnwaved;
+    markDraft(d);
+    toast(`Unwaved loaded: LTC ${fmt(r.ltcReaches)} reaches, outbound ${fmt(r.obReaches)} reaches`+(r.tt85?` (TT 85: LTC ${fmt(r.tt85.ltcReaches)}, outbound ${fmt(r.tt85.obReaches)})`:"")+(r.tt90?` (TT 90: LTC ${fmt(r.tt90.ltcReaches)}, outbound ${fmt(r.tt90.obReaches)})`:"")+".",9000);
+    amDate=d; render();
+    await saveMorning();
+  }catch(err){ toast("Couldn't load "+f.name+". "+err.message,12000); }
+}
+async function saveMorning(){
+  if(!mdb||amSaving) return;
+  const d=current, f={...amForm}, body={form:f, goals:goalsOf(f), savedAt:new Date().toISOString()};
+  const a=autoFor(d); if(a) body.auto=a;
+  const uw=amUW[d]||(MORNING[d]&&MORNING[d].unwaved); if(uw) body.unwaved=uw;
+  try{ const id=muser?await muser.id():null; if(id) body.savedBy=id; }catch(e){}
+  amSaving=true; const btn=document.getElementById("amSave"); if(btn) btn.disabled=true;
+  const go=()=>mdb.doc("morning/"+d).set(body);
+  try{
+    try{ await go(); }catch(e){ if(e&&e.code==="unavailable"){ await new Promise(r=>setTimeout(r,700+Math.random()*900)); await go(); } else throw e; }
+    delete amDrafts[d]; delete draftBase[d]; delete amUW[d];
+    toast("WIP numbers saved for "+shortDate(d)+".");
+  }catch(e){
+    if(e&&/permission/i.test((e.code||"")+" "+(e.message||""))){ canWrite=false; toast("This didn't save: your account has view-only access. Ask the dashboard owner for edit access.",12000); if(tab==="ame"){ amDate=null; render(); } }
+    else toast("Couldn't save the morning numbers"+(e&&e.message?": "+e.message:"")+".",12000);
+  }finally{
+    amSaving=false; const b=document.getElementById("amSave"); if(b) b.disabled=(canWrite===false||!mdb); amStatus();
+  }
+}
+// ---- Firebase: sign-in, shared scorecard and WIP numbers ----
+// Database layout: /scorecard {data, absent, label, loadedAt, loadedBy}
+//                  /morning/<YYYY-MM-DD> {form, goals, auto, unwaved, savedAt, savedBy}
+//                  /access/<uid> "view" | "edit"   (set by the owner in the Firebase console)
+let fbUser=null, fbOff=[], fbHeard=false;
+const authModal=document.getElementById("authModal");
+function fbStop(){ fbOff.forEach(f=>{ try{ f(); }catch(e){} }); fbOff=[]; }
+function showAuth(mode){
+  authModal.hidden=false;
+  document.getElementById("authForm").hidden=mode!=="signin";
+  document.getElementById("signupForm").hidden=mode!=="signup";
+  document.getElementById("authTitle").textContent=mode==="signup"?"Request an account":mode==="noaccess"?"Waiting for approval":"Sign in to Daily Output";
+  document.getElementById("authNoAccess").hidden=mode!=="noaccess";
+  if(mode==="signin") setTimeout(()=>document.getElementById("authEmail").focus(),0);
+  if(mode==="signup") setTimeout(()=>document.getElementById("suName").focus(),0);
+}
+function acctUI(){ const b=document.getElementById("acctBtn"); b.textContent=fbUser?"Sign out":"Sign in"; b.title=fbUser?"Signed in as "+fbUser.email:""; }
+function fbErr(e){ toast("Database: "+((e&&e.message)||e),12000); }
+function authMessage(e){
+  const c=(e&&e.code)||"";
+  if(/invalid-credential|wrong-password|user-not-found|invalid-email/.test(c)) return "That email and password don't match. Check them, or use Forgot password.";
+  if(/too-many-requests/.test(c)) return "Too many tries. Wait a few minutes or reset your password.";
+  if(/network-request-failed/.test(c)) return "Couldn't reach the sign-in service. Check your connection.";
+  if(/operation-not-allowed/.test(c)) return "Email/Password sign-in isn't turned on in Firebase yet (Authentication \u2192 Sign-in method).";
+  if(/operation-not-supported|unauthorized-domain/.test(c)) return location.protocol==="file:"?FILE_NOTE:"This web address isn't on Firebase's Authorized domains list (Authentication \u2192 Settings).";
+  return (e&&e.message)||"Sign-in failed.";
+}
+window.addEventListener("fb-auth",e=>{
+  fbHeard=true; fbStop(); stopAdmin(); fbUser=e.detail; myRole=null; acctUI();
+  document.getElementById("usersTab").hidden=true; if(tab==="users") setTab("sum");
+  mdb=null; muser=null; canWrite=null;
+  if(!fbUser){
+    // Signed out: nothing from the database stays on this computer.
+    DATA={}; MORNING={}; SOURCE=""; ABSENT=[]; try{ localStorage.removeItem(STORE_KEY); }catch(err){}
+    amDate=null; render(); showAuth("signin"); return;
+  }
+  FB.write("users/"+fbUser.uid,{email:fbUser.email, name:fbUser.name, lastSignIn:new Date().toISOString()}).catch(()=>{});
+  fbOff.push(FB.listen("access/"+fbUser.uid, role=>{
+    myRole=role;
+    document.getElementById("usersTab").hidden=role!=="admin";
+    if(role==="admin") startAdmin(); else { stopAdmin(); if(tab==="users") setTab("sum"); }
+    if(role!=="view"&&role!=="edit"&&role!=="admin"){
+      document.getElementById("naEmail").textContent=fbUser.email;
+      document.getElementById("naUid").textContent=fbUser.uid;
+      FB.write("requests/"+fbUser.uid,{email:fbUser.email, name:fbUser.name, at:new Date().toISOString()}).catch(()=>{});
+      showAuth("noaccess"); return;
+    }
+    authModal.hidden=true; canWrite=role==="edit"||role==="admin";
+    if(!mdb) startData();
+    amDate=null; render();
+  }, fbErr));
+});
+// ---- Users tab: admins add, approve, change and remove access ----
+let myRole=null, ACCESS={}, USERS={}, REQUESTS={}, adminOff=[], removeArm=null;
+const ROLE_LABEL={view:"View",edit:"Edit",admin:"Admin"};
+function startAdmin(){
+  if(adminOff.length) return;
+  const redraw=()=>{ if(tab==="users") drawUserLists(); };
+  adminOff.push(FB.listen("access",v=>{ ACCESS=v||{}; redraw(); },fbErr));
+  adminOff.push(FB.listen("users",v=>{ USERS=v||{}; redraw(); },fbErr));
+  adminOff.push(FB.listen("requests",v=>{ REQUESTS=v||{}; redraw(); },fbErr));
+}
+function stopAdmin(){ adminOff.forEach(f=>{ try{ f(); }catch(e){} }); adminOff=[]; ACCESS={}; USERS={}; REQUESTS={}; }
+const who=id=>(USERS[id]&&USERS[id].email)||(REQUESTS[id]&&REQUESTS[id].email)||id;
+const when=t=>t?new Date(t).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
+function renderUsers(box){
+  document.getElementById("dayTitle").textContent="Who can use the dashboard";
+  document.getElementById("dataMeta").textContent="";
+  if(myRole!=="admin"){ box.innerHTML=`<div class="empty"><h3>Only admins can manage access</h3></div>`; return; }
+  box.innerHTML=`
+  <div class="am-grid">
+    <div class="am-card"><h3>Waiting for access<small id="uReqCount"></small></h3><div id="uReq"></div></div>
+    <div class="am-card"><h3>Add a person</h3>
+      <form class="u-form" id="uAdd" novalidate>
+        <label class="field">Email<input class="am-in" type="email" id="uEmail" autocomplete="off"></label>
+        <label class="field">Temporary password <span>(at least 6 characters; they can change it with Forgot password)</span><input class="am-in" type="text" id="uPass" autocomplete="off"></label>
+        <label class="field">Access<select class="am-in" id="uRole"><option value="view">View: read only</option><option value="edit" selected>Edit: save WIP, load scorecards</option><option value="admin">Admin: edit + manage users</option></select></label>
+        <div class="modal-actions"><button type="submit" class="btn primary" id="uGo">Create account</button></div>
+        <p class="modal-note" id="uMsg" role="status"></p>
+      </form>
+    </div>
+  </div>
+  <div class="am-card"><h3>People with access<small id="uPeopleCount"></small></h3><div id="uPeople"></div>
+    <p class="modal-note">Removing someone takes away their access right away. Their sign-in still exists; delete it under Authentication &rarr; Users in Firebase if they've left for good.</p></div>`;
+  document.getElementById("uAdd").addEventListener("submit",addPerson);
+  drawUserLists();
+}
+function drawUserLists(){
+  const rq=document.getElementById("uReq"), pp=document.getElementById("uPeople"); if(!rq||!pp) return;
+  const waiting=Object.keys(REQUESTS).filter(id=>!ACCESS[id]).sort((a,b)=>(REQUESTS[a].at||"").localeCompare(REQUESTS[b].at||""));
+  document.getElementById("uReqCount").textContent=waiting.length||"";
+  const reqName=id=>{ const n=REQUESTS[id].name; return n&&n!==REQUESTS[id].email?n+" \u00b7 ":""; };
+  rq.innerHTML=waiting.length?waiting.map(id=>`<div class="am-row"><div class="lbl"><b style="color:var(--text)">${esc(reqName(id)+who(id))}</b><small>Asked ${esc(when(REQUESTS[id].at))}</small></div>
+      <div class="val u-act"><button type="button" class="btn" data-approve="${esc(id)}" data-role="view">Approve: View</button><button type="button" class="btn primary" data-approve="${esc(id)}" data-role="edit">Approve: Edit</button><button type="button" class="btn" data-dismiss="${esc(id)}">Dismiss</button></div></div>`).join("")
+    :`<p class="modal-note">Nobody is waiting. When someone with an account signs in and isn't on the list, they show up here.</p>`;
+  const ids=Object.keys(ACCESS).sort((a,b)=>(ACCESS[a]==="admin"?0:1)-(ACCESS[b]==="admin"?0:1)||who(a).localeCompare(who(b)));
+  const admins=ids.filter(i=>ACCESS[i]==="admin").length;
+  document.getElementById("uPeopleCount").textContent=ids.length;
+  pp.innerHTML=ids.map(id=>{
+    const me=fbUser&&id===fbUser.uid, lastAdmin=ACCESS[id]==="admin"&&admins<=1;
+    const seen=USERS[id]&&USERS[id].lastSignIn?"Last signed in "+when(USERS[id].lastSignIn):"Hasn't signed in yet";
+    const nm=USERS[id]&&USERS[id].name&&USERS[id].name!==who(id)?USERS[id].name+" \u00b7 ":"";
+    return `<div class="u-row"><div class="who"><b>${esc(nm+who(id))}${me?" (you)":""}</b><small>${esc(seen)} &middot; ${esc(id)}</small></div>
+      <select class="am-in" data-role-for="${esc(id)}" aria-label="Access for ${esc(who(id))}"${me?" disabled":""}>${["view","edit","admin"].map(r=>`<option value="${r}"${ACCESS[id]===r?" selected":""}>${ROLE_LABEL[r]}</option>`).join("")}</select>
+      <div class="u-act">${me?`<span class="modal-note">You can't remove yourself</span>`:`<button type="button" class="btn warn" data-remove="${esc(id)}"${lastAdmin?" disabled":""}>Remove</button>`}</div></div>`;
+  }).join("");
+  rq.querySelectorAll("[data-approve]").forEach(b=>b.onclick=()=>approve(b.dataset.approve,b.dataset.role));
+  rq.querySelectorAll("[data-dismiss]").forEach(b=>b.onclick=()=>FB.write("requests/"+b.dataset.dismiss,null).then(()=>toast("Request dismissed.")).catch(fbErr));
+  pp.querySelectorAll("[data-role-for]").forEach(sel=>sel.onchange=()=>{
+    const id=sel.dataset.roleFor, r=sel.value;
+    if(ACCESS[id]==="admin"&&r!=="admin"&&admins<=1){ sel.value="admin"; return toast("There has to be at least one admin.",8000); }
+    FB.write("access/"+id,r).then(()=>toast(who(id)+" now has "+ROLE_LABEL[r]+" access.")).catch(e=>{ fbErr(e); drawUserLists(); });
+  });
+  pp.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.remove;
+    if(removeArm!==id){ removeArm=id; b.textContent="Click again to remove"; setTimeout(()=>{ if(removeArm===id){ removeArm=null; drawUserLists(); } },4000); return; }
+    removeArm=null;
+    FB.write("access/"+id,null).then(()=>{ FB.write("requests/"+id,null).catch(()=>{}); toast(who(id)+" no longer has access."); }).catch(fbErr);
+  });
+}
+async function approve(id,role){
+  const name=who(id), req=REQUESTS[id];
+  try{
+    await FB.write("access/"+id,role);
+    if(req&&!USERS[id]) await FB.write("users/"+id,{email:req.email, name:req.name||req.email}).catch(()=>{});
+    await FB.write("requests/"+id,null);
+    toast(name+" approved with "+ROLE_LABEL[role]+" access.");
+  }
+  catch(e){ fbErr(e); }
+}
+async function addPerson(e){
+  e.preventDefault();
+  const msg=document.getElementById("uMsg"), go=document.getElementById("uGo");
+  const email=document.getElementById("uEmail").value.trim().toLowerCase(), pass=document.getElementById("uPass").value, role=document.getElementById("uRole").value;
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.textContent="Enter a valid email address."; return; }
+  if(pass.length<6){ msg.textContent="The temporary password needs at least 6 characters."; return; }
+  const existing=Object.keys(USERS).find(id=>(USERS[id].email||"").toLowerCase()===email);
+  if(existing&&ACCESS[existing]){ msg.textContent=email+" already has "+ROLE_LABEL[ACCESS[existing]]+" access. Change it in the list below."; return; }
+  go.disabled=true; msg.textContent="Creating the account…";
+  try{
+    const uid=await FB.createAccount(email,pass);
+    await FB.write("users/"+uid,{email, addedAt:new Date().toISOString(), addedBy:fbUser.name});
+    await FB.write("access/"+uid,role);
+    msg.textContent=`Done. Send ${email} the dashboard link and the temporary password; they get ${ROLE_LABEL[role]} access.`;
+    document.getElementById("uEmail").value=""; document.getElementById("uPass").value="";
+  }catch(err){
+    const c=(err&&err.code)||"";
+    if(/email-already-in-use/.test(c)){
+      if(existing){ await FB.write("access/"+existing,role).catch(fbErr); msg.textContent=`${email} already had an account, so it now has ${ROLE_LABEL[role]} access.`; }
+      else msg.textContent=`${email} already has an account. Ask them to sign in once; they'll show up under Waiting for access for you to approve.`;
+    }
+    else if(/admin-restricted-operation|operation-not-allowed/.test(c)) msg.textContent="Firebase is set to block creating accounts from this page. Either create the account in Firebase (Authentication → Users → Add user) and have them sign in once so you can approve them here, or turn on Authentication → Settings → User actions → Enable create (sign-up).";
+    else if(/weak-password/.test(c)) msg.textContent="Firebase rejected that password as too weak. Try a longer one.";
+    else msg.textContent="Couldn't create the account: "+((err&&err.message)||err);
+  }finally{ go.disabled=false; }
+}
+function startData(){
+  muser={ id:async()=>fbUser.name, profiles:async ids=>Object.fromEntries(ids.map(i=>[i,{name:i}])) };
+  mdb={ doc:p=>({ set:body=>FB.write(p, JSON.parse(JSON.stringify(body))) }) };
+  fbOff.push(FB.listen("scorecard", v=>{
+    if(v&&v.data){
+      DATA=v.data; ABSENT=v.absent||[]; SOURCE=v.label||"";
+      try{ localStorage.setItem(STORE_KEY,JSON.stringify({data:DATA,label:SOURCE,absent:ABSENT})); }catch(err){}
+    }
+    if(tab==="ame"&&amDrafts[current]){ updateComputed(); amStatus(); return; }
+    render();
+  }, fbErr));
+  fbOff.push(FB.listen("morning", v=>{
+    MORNING=v||{};
+    if(tab==="ame"&&amDrafts[current]){ updateComputed(); amStatus(); return; } // never wipe what someone is typing
+    amDate=null; render();
+  }, fbErr));
+}
+const FILE_NOTE="This page was opened straight from your computer (a file:/// address), and the browser is blocking the sign-in service. Test it through a local web server or on GitHub Pages instead.";
+document.getElementById("acctBtn").onclick=()=>{
+  if(fbUser) return FB.signOut();
+  if(!window.FB) return toast(location.protocol==="file:"?FILE_NOTE:"The sign-in service hasn't loaded yet. Check your connection, or that this network allows gstatic.com and firebaseio.com.",15000);
+  showAuth("signin");
+};
+document.getElementById("authClose").onclick=()=>{ authModal.hidden=true; };
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!authModal.hidden) authModal.hidden=true; });
+document.getElementById("authForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const msg=document.getElementById("authMsg"), email=document.getElementById("authEmail").value.trim(), pass=document.getElementById("authPass");
+  if(!email||!pass.value){ msg.textContent="Enter your email and password."; return; }
+  msg.textContent="Signing in…"; document.getElementById("authGo").disabled=true;
+  try{ await FB.signIn(email,pass.value); msg.textContent=""; pass.value=""; }
+  catch(err){ msg.textContent=authMessage(err); }
+  finally{ document.getElementById("authGo").disabled=false; }
+});
+document.getElementById("authReset").onclick=async()=>{
+  const msg=document.getElementById("authMsg"), email=document.getElementById("authEmail").value.trim();
+  if(!email){ msg.textContent="Type your email above first, then click Forgot password."; return; }
+  try{ await FB.resetPassword(email); msg.textContent="If that email has an account, a password reset link is on its way."; }
+  catch(err){ msg.textContent=authMessage(err); }
+};
+document.getElementById("naCopy").onclick=()=>{ const id=document.getElementById("naUid").textContent;
+  (navigator.clipboard?navigator.clipboard.writeText(id):Promise.reject()).then(()=>toast("Account ID copied."),()=>toast("Select the ID and press Ctrl+C.")); };
+document.getElementById("naOut").onclick=()=>FB.signOut();
+document.getElementById("toSignup").onclick=e=>{ e.preventDefault(); document.getElementById("suEmail").value=document.getElementById("authEmail").value; showAuth("signup"); };
+document.getElementById("toSignin").onclick=()=>showAuth("signin");
+document.getElementById("signupForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const msg=document.getElementById("suMsg"), go=document.getElementById("suGo");
+  const name=document.getElementById("suName").value.trim(), email=document.getElementById("suEmail").value.trim().toLowerCase();
+  const p1=document.getElementById("suPass").value, p2=document.getElementById("suPass2").value;
+  if(!name){ msg.textContent="Enter your name so the admin knows who you are."; return; }
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.textContent="Enter a valid email address."; return; }
+  if(p1.length<6){ msg.textContent="The password needs at least 6 characters."; return; }
+  if(p1!==p2){ msg.textContent="The two passwords don't match."; return; }
+  go.disabled=true; msg.textContent="Creating your account\u2026";
+  try{
+    const u=await FB.signUp(email,p1,name);
+    const at=new Date().toISOString();
+    await FB.write("users/"+u.uid,{email:u.email, name, lastSignIn:at}).catch(()=>{});
+    await FB.write("requests/"+u.uid,{email:u.email, name, at}).catch(()=>{});
+    if(fbUser&&fbUser.uid===u.uid) fbUser.name=name;
+    document.getElementById("suPass").value=""; document.getElementById("suPass2").value=""; msg.textContent="";
+  }catch(err){
+    const c=(err&&err.code)||"";
+    if(/email-already-in-use/.test(c)) msg.textContent="That email already has an account. Go back and sign in, or use Forgot password.";
+    else if(/admin-restricted-operation|operation-not-allowed/.test(c)) msg.textContent="New accounts are turned off right now. Ask a dashboard admin to add you.";
+    else if(/weak-password/.test(c)) msg.textContent="That password is too weak. Try a longer one.";
+    else if(/invalid-email/.test(c)) msg.textContent="That email address isn't valid.";
+    else msg.textContent=authMessage(err);
+  }finally{ go.disabled=false; }
+});
+setTimeout(()=>{ if(!fbHeard) toast(location.protocol==="file:"?FILE_NOTE:"Couldn't reach Firebase. Check your connection, or that this network allows gstatic.com and firebaseio.com.",15000); },location.protocol==="file:"?4000:10000);
+
+// ---- Email this day's report ----
+const DASH_URL = location.href.split("#")[0];
+const EMAIL_SECTIONS = [["Summary","sum"]];
+const esc = t => String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function emailRows(tabKey){
+  const rec=DATA[current];
+  return TABS[tabKey].filter(k=>{ const m=METRICS[k]; return !m.optional || total(rec,m)>0; }).map(k=>{
+    const m=METRICS[k], dec=m.dec||0, shw=tabKey!=="sum";
+    const a=shiftVal(rec,m,0), b=shiftVal(rec,m,1);
+    return {name:(tabKey==="sum"&&m.sumName)?m.sumName:m.name, total:fmt(total(rec,m),dec), unit:m.unit,
+      s1:shw?(a==null?"not entered":fmt(a,dec)):"", s2:shw?(b==null?"not entered":fmt(b,dec)):""};
+  });
+}
+function emailSubject(){ return "Daily Output \u2013 "+longDate(current); }
+function emailText(){
+  let t="Daily Output recap for "+longDate(current)+"\n";
+  for(const [title,key] of EMAIL_SECTIONS){
+    t+="\n"+title.toUpperCase()+"\n";
+    for(const r of emailRows(key)) t+="  "+r.name+": "+r.total+" "+r.unit+(r.s1!==""?"  (1st "+r.s1+" / 2nd "+r.s2+")":"")+"\n";
+  }
+  return t+"\nFull dashboard: "+DASH_URL+"\n";
+}
+function emailHtml(){
+  const F='font-family:Segoe UI,Arial,sans-serif;';
+  let h=`<div style="${F}color:#0f1f35;max-width:640px;">
+  <div style="background:#0f2447;color:#ffffff;padding:16px 20px;border-bottom:4px solid #e2231a;">
+    <div style="font-size:20px;font-weight:700;">Daily Output</div>
+    <div style="font-size:13px;color:#c9d6ea;margin-top:2px;">${esc(longDate(current))} &middot; CEVA Logistics / BBW</div>
+  </div>`;
+  for(const [title,key] of EMAIL_SECTIONS){
+    const rows=emailRows(key), shw=key!=="sum";
+    h+=`<div style="font-size:13px;font-weight:700;letter-spacing:.5px;color:#e2231a;margin:18px 0 6px;padding:0 4px;">${title.toUpperCase()}</div>
+    <table cellpadding="0" cellspacing="0" style="${F}border-collapse:collapse;width:100%;font-size:14px;">
+      <tr style="background:#eef2f7;color:#4a5f7a;font-size:12px;">
+        <td style="padding:6px 10px;">Metric</td><td style="padding:6px 10px;text-align:right;">Total</td>
+        ${shw?'<td style="padding:6px 10px;text-align:right;">1st shift</td><td style="padding:6px 10px;text-align:right;">2nd shift</td>':""}
+      </tr>`;
+    for(const r of rows){
+      h+=`<tr style="border-bottom:1px solid #e3e9f1;">
+        <td style="padding:8px 10px;">${esc(r.name)}</td>
+        <td style="padding:8px 10px;text-align:right;font-weight:700;">${esc(r.total)} <span style="font-weight:400;color:#7589a3;font-size:12px;">${esc(r.unit)}</span></td>
+        ${shw?`<td style="padding:8px 10px;text-align:right;color:${r.s1==="not entered"?"#9aa9bd":"#0f1f35"};">${esc(r.s1)}</td><td style="padding:8px 10px;text-align:right;color:${r.s2==="not entered"?"#9aa9bd":"#0f1f35"};">${esc(r.s2)}</td>`:""}
+      </tr>`;
+    }
+    h+=`</table>`;
+  }
+  h+=`<p style="margin:20px 4px 4px;font-size:13px;"><a href="${DASH_URL}" style="color:#1b5fbf;font-weight:600;">Open the full dashboard</a></p>
+  <p style="margin:0 4px;font-size:11.5px;color:#7589a3;">Source: ${esc(SOURCE)}</p></div>`;
+  return h;
+}
+const modal=document.getElementById("emailModal"), toInput=document.getElementById("emailTo"), note=document.getElementById("emailNote");
+try{ toInput.value=localStorage.getItem("bbw-email-to")||""; }catch(e){}
+toInput.addEventListener("change",()=>{ try{ localStorage.setItem("bbw-email-to",toInput.value.trim()); }catch(e){} });
+let shotBlob=null, shotPromise=null;
+function waitFrame(){ return new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))); }
+async function captureSummary(){
+  if(!window.html2canvas) throw new Error("no-h2c");
+  const prevTab=tab;
+  if(tab!=="sum"){ setTab("sum"); await waitFrame(); }
+  const wrap=document.querySelector(".wrap");
+  const bg=getComputedStyle(document.body).backgroundColor;
+  try{
+    const canvas=await html2canvas(wrap,{backgroundColor:bg,scale:Math.min(2,Math.max(1,devicePixelRatio||1)),logging:false,
+      ignoreElements:el=>el.classList&&(el.classList.contains("controls")||el.classList.contains("tabs")||el.id==="foot")});
+    return await new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(new Error("blob")),"image/png"));
+  }finally{
+    if(prevTab!=="sum") setTab(prevTab);
+  }
+}
+function openEmail(){
+  document.getElementById("emailSubj").textContent=emailSubject();
+  const pv=document.getElementById("emailPreview");
+  pv.innerHTML='<p class="shot-wait">Taking a screenshot of the summary&hellip;</p>';
+  modal.hidden=false; document.getElementById("emailOpen").focus();
+  shotBlob=null;
+  shotPromise=captureSummary().then(b=>{
+    shotBlob=b; const img=new Image(); img.alt="Summary screenshot"; img.src=URL.createObjectURL(b);
+    pv.innerHTML=""; pv.appendChild(img); return b;
+  }).catch(e=>{
+    pv.innerHTML='<p class="shot-wait">The screenshot couldn\u2019t be made here. The draft will still include the numbers and the dashboard link.</p>';
+    throw e;
+  });
+  shotPromise.catch(()=>{});
+}
+function closeEmail(){ modal.hidden=true; document.getElementById("emailBtn").focus(); }
+document.getElementById("emailBtn").onclick=openEmail;
+document.getElementById("emailClose").onclick=closeEmail;
+modal.addEventListener("click",e=>{ if(e.target===modal) closeEmail(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !modal.hidden) closeEmail(); });
+
+// Must be called straight from a click so the browser allows it; the blob can still be finishing.
+function copyShot(){
+  try{
+    if(!navigator.clipboard || !window.ClipboardItem || !shotPromise) return Promise.reject(new Error("no-clipboard"));
+    return navigator.clipboard.write([new ClipboardItem({"image/png":shotPromise})]);
+  }catch(e){ return Promise.reject(e); }
+}
+function mailtoUrl(){
+  const to=toInput.value.split(/[;,]/).map(x=>x.trim()).filter(Boolean).join(";");
+  return "mailto:"+encodeURIComponent(to).replace(/%40/g,"@").replace(/%3B/g,";")+"?subject="+encodeURIComponent(emailSubject())+"&body="+encodeURIComponent(emailText());
+}
+document.getElementById("emailOpen").onclick=()=>{
+  const copied=copyShot();
+  const url=mailtoUrl();
+  let w=null; try{ w=window.open(url,"_blank"); }catch(e){}
+  if(!w){ try{ window.location.href=url; }catch(e){} }
+  copied.then(()=>{
+    toast("Screenshot copied. In the draft, click in the body and press Ctrl+V.");
+    note.innerHTML="Screenshot copied. In the draft, click in the body and press <b>Ctrl+V</b>. If no draft opened, your browser blocked it here: start a new email yourself and paste.";
+  },()=>{
+    note.innerHTML="The draft has the numbers and link, but this browser wouldn\u2019t copy the image from here."+(document.getElementById("emailSave").hidden?" Right-click the screenshot above and choose <b>Copy image</b>, then paste it into the draft.":" Use <b>Download screenshot</b> and drag the file into the draft, or right-click the screenshot above and choose <b>Copy image</b>.");
+  });
+};
+document.getElementById("emailCopy").onclick=()=>{
+  copyShot().then(()=>toast("Screenshot copied. Paste it into your email with Ctrl+V."),
+    ()=>toast("Couldn\u2019t copy from here. Right-click the screenshot and choose Copy image."));
+};
+(()=>{
+  const btn=document.getElementById("emailSave"); btn.hidden=false;
+  btn.onclick=async()=>{
+    try{
+      const b=shotBlob || await shotPromise;
+      const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="Daily Output Recap "+current+".png";
+      document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500);
+      toast("Saved. Drag the image into your email or attach it.");
+    }catch(e){ toast("Couldn\u2019t save the screenshot."); }
+  };
+})();
+
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",render);
+new MutationObserver(render).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+render();
+</script>
+</body>
+</html>
