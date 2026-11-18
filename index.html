@@ -68,7 +68,19 @@ input[type=date]{background:transparent;border:none;color:#e7eef7;font-size:14px
 .btn.primary:hover{background:#c41d15;}
 button:focus-visible,input:focus-visible{outline:2px solid #3d9fe8;outline-offset:2px;}
 
-.dayline{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+.dayline{display:flex;align-items:center;justify-content:space-between;gap:12px 16px;flex-wrap:wrap;margin-bottom:16px;}
+.dayline .meta{margin-top:4px;}
+.rangebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.rangebar[hidden],.seg[hidden]{display:none;}
+.seg{display:flex;background:var(--card);border:1px solid var(--card-border-light);border-radius:10px;padding:4px;gap:2px;}
+.seg button{background:transparent;border:none;color:var(--text-dim);font:inherit;font-size:14px;font-weight:700;padding:8px 14px;border-radius:7px;cursor:pointer;}
+.seg button:hover{color:var(--text);}
+.seg button.on{background:var(--accent);color:#fff;}
+.rsel{background:var(--card);border:1px solid var(--card-border-light);color:var(--text);font:inherit;font-size:14px;font-weight:600;padding:10px 12px;border-radius:10px;min-width:170px;cursor:pointer;}
+.rangebar .custom{display:flex;align-items:center;gap:8px;color:var(--text-dim);font-size:13px;}
+.rangebar .custom[hidden]{display:none;}
+.rangebar .custom input{background:var(--card);border:1px solid var(--card-border-light);color:var(--text);font:inherit;font-size:13.5px;padding:8px 10px;border-radius:8px;color-scheme:light dark;}
+.seg button:focus-visible,.rsel:focus-visible,.rangebar .custom input:focus-visible{outline:2px solid #3d9fe8;outline-offset:2px;}
 .dayline h2{margin:0;font-size:24px;font-weight:800;}
 .dayline .meta{color:var(--text-dim);font-size:13px;}
 
@@ -176,6 +188,15 @@ input.am-in[type=date]{background:var(--bg);color:var(--text);width:160px;font-s
 .am-row .txtv{white-space:pre-wrap;font-weight:500;color:var(--text);}
 .am-pick .vv{display:block;text-align:right;font-weight:800;font-variant-numeric:tabular-nums;}
 .am-row.txt .val .miss,.am-row.wide .val .miss{font-weight:500;}
+.dept-h{display:flex;align-items:baseline;gap:10px;margin:26px 0 12px;font-size:18px;font-weight:800;}
+.dept-h::before{content:"";width:5px;height:20px;border-radius:2px;background:var(--dept);align-self:center;}
+.dept-h small{font-size:12.5px;font-weight:600;color:var(--text-faint);}
+#dayContent > .dept-h:first-child{margin-top:4px;}
+.dept-grid{margin-bottom:8px;}
+.dept-grid .kpi .value{font-size:36px;}
+.kpi-notes .note-row{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--text-dim);padding:6px 0;border-top:1px solid var(--card-border);}
+.kpi-notes .label + .note-row{margin-top:10px;border-top:none;}
+.kpi-notes .note-row b{color:var(--text);font-weight:700;text-align:right;}
 .u-act{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
 .u-act .btn{padding:7px 12px;}
 .u-row{display:grid;grid-template-columns:minmax(0,1fr) 130px 150px;gap:8px 14px;align-items:center;padding:10px 0;border-top:1px solid var(--card-border);font-size:13.5px;}
@@ -279,8 +300,21 @@ onAuthStateChanged(auth, u => window.dispatchEvent(new CustomEvent("fb-auth", {
   </nav>
 
   <div class="dayline">
-    <h2 id="dayTitle">&nbsp;</h2>
-    <div class="meta" id="dataMeta"></div>
+    <div><h2 id="dayTitle">&nbsp;</h2><div class="meta" id="dataMeta"></div></div>
+    <div class="rangebar" id="rangeBar">
+      <div class="seg" id="granSeg" role="group" aria-label="Group charts by">
+        <button type="button" data-gran="day" class="on">Day</button><button type="button" data-gran="week">Week</button><button type="button" data-gran="month">Month</button><button type="button" data-gran="year">Year</button>
+      </div>
+      <select id="rangeSel" class="rsel" aria-label="Date range">
+        <option value="prev">Previous day</option>
+        <option value="day">Selected day</option>
+        <option value="7">Last 7 days</option>
+        <option value="30">Last 30 days</option>
+        <option value="all">All time</option>
+        <option value="custom">Custom range&hellip;</option>
+      </select>
+      <span class="custom" id="customBox" hidden><input type="date" id="rFrom" aria-label="From date"><span>to</span><input type="date" id="rTo" aria-label="To date"></span>
+    </div>
   </div>
 
   <div id="dayContent"></div>
@@ -295,7 +329,7 @@ onAuthStateChanged(auth, u => window.dispatchEvent(new CustomEvent("fb-auth", {
   <section class="charts-grid" id="chartsIb" hidden>
     <div class="chart-card">
       <h3>Trailers unloaded by day</h3>
-      <div class="note">30 days ending on the selected date. Click a bar to open that day.</div>
+      <div class="note rn"></div>
       <div class="chart-holder"><canvas id="trlChart"></canvas></div>
     </div>
     <div class="chart-card">
@@ -312,12 +346,12 @@ onAuthStateChanged(auth, u => window.dispatchEvent(new CustomEvent("fb-auth", {
   <section class="charts-grid" id="chartsLtfc" hidden>
     <div class="chart-card">
       <h3>Reaches picked by day</h3>
-      <div class="note">30 days ending on the selected date. Click a bar to open that day.</div>
+      <div class="note rn"></div>
       <div class="chart-holder"><canvas id="reachChart"></canvas></div>
     </div>
     <div class="chart-card">
       <h3>Units picked by day</h3>
-      <div class="note">30 days ending on the selected date. Click a bar to open that day.</div>
+      <div class="note rn"></div>
       <div class="chart-holder"><canvas id="unitChart"></canvas></div>
     </div>
     <div class="chart-card wide">
@@ -329,17 +363,17 @@ onAuthStateChanged(auth, u => window.dispatchEvent(new CustomEvent("fb-auth", {
   <section class="charts-grid" id="chartsOb" hidden>
     <div class="chart-card">
       <h3>Cartons sorted by day</h3>
-      <div class="note">30 days ending on the selected date. Click a bar to open that day.</div>
+      <div class="note rn"></div>
       <div class="chart-holder"><canvas id="obChart"></canvas></div>
     </div>
     <div class="chart-card">
       <h3>Units picked by day</h3>
-      <div class="note">30 days ending on the selected date. Click a bar to open that day.</div>
+      <div class="note rn"></div>
       <div class="chart-holder"><canvas id="obuChart"></canvas></div>
     </div>
     <div class="chart-card">
       <h3>Cartons invoiced by day</h3>
-      <div class="note">30 days ending on the selected date. Click a bar to open that day.</div>
+      <div class="note rn"></div>
       <div class="chart-holder"><canvas id="invChart"></canvas></div>
     </div>
     <div class="chart-card">
@@ -496,6 +530,82 @@ function prevWorkday(d){ const x=parseIso(d); do{ x.setDate(x.getDate()-1); }whi
 function recapDay(){ const t=iso(new Date()), pw=prevWorkday(t); return sortedDates().filter(x=>x>=pw&&x<t).pop()||pw; }
 let current = recapDay();
 
+// ---- Date range: which days the cards add up, and how the charts group them ----
+let rangeKey="prev", gran="day", rFrom=null, rTo=null;   // prev | day | 7 | 30 | all | custom
+function rangeBounds(){
+  if(rangeKey==="prev"||rangeKey==="day") return [current,current];
+  const end=recapDay();
+  if(rangeKey==="7") return [addDays(end,-6),end];
+  if(rangeKey==="30") return [addDays(end,-29),end];
+  if(rangeKey==="all"){ const ds=sortedDates(); return [ds[0]||end, ds.length?ds[ds.length-1]:end]; }
+  return [rFrom||current, rTo||current];
+}
+const isMulti=()=>!(rangeKey==="prev"||rangeKey==="day");
+function viewDays(){ if(!isMulti()) return [current]; const [a,b]=rangeBounds(); return sortedDates().filter(d=>d>=a&&d<=b); }
+function rangeLabel(){
+  if(!isMulti()) return longDate(current);
+  const [a,b]=rangeBounds(), y=x=>x.slice(0,4);
+  return (y(a)===y(b)?shortDate(a):shortDate(a)+", "+y(a))+" \u2013 "+shortDate(b)+", "+y(b);
+}
+// Totals over several days: sums add up, rates use total numerator / total hours, snapshots take the last value.
+function mTotal(m,days){
+  if(!days.length) return null;
+  if(days.length===1) return total(DATA[days[0]],m);
+  if(m.kind==="snapshot"){ for(let i=days.length-1;i>=0;i--){ const v=total(DATA[days[i]],m); if(v!=null) return v; } return null; }
+  if(m.kind==="sum"){ let t=null; for(const d of days){ const v=total(DATA[d],m); if(v!=null) t=(t||0)+v; } return t; }
+  let r=0,h=0; for(const d of days){ const x=DATA[d]; if(!x) continue; for(let k=0;k<2;k++) if(x[m.num[k]]!=null&&x[m.den[k]]>0){ r+=x[m.num[k]]; h+=x[m.den[k]]; } }
+  return h>0?r/h:null;
+}
+function mShift(m,days,s){
+  if(!days.length) return null;
+  if(days.length===1) return shiftVal(DATA[days[0]],m,s);
+  if(m.kind==="snapshot"){ for(let i=days.length-1;i>=0;i--){ const v=shiftVal(DATA[days[i]],m,s); if(v!=null) return v; } return null; }
+  if(m.kind==="sum"){ let t=null; for(const d of days){ const v=shiftVal(DATA[d],m,s); if(v!=null) t=(t||0)+v; } return t; }
+  const nd=mND(m,days,s); return nd?nd[0]/nd[1]:null;
+}
+function mND(m,days,s){ let r=0,h=0,any=false; for(const d of days){ const x=DATA[d]; if(x&&x[m.num[s]]!=null&&x[m.den[s]]>0){ r+=x[m.num[s]]; h+=x[m.den[s]]; any=true; } } return any?[r,h]:null; }
+const daysWith=(m,days)=>days.filter(d=>total(DATA[d],m)!=null).length;
+
+// Chart buckets
+function weekStart(d){ const x=parseIso(d), wd=(x.getDay()+6)%7; x.setDate(x.getDate()-wd); return iso(x); }
+function bucketOf(d){ return gran==="week"?weekStart(d):gran==="month"?d.slice(0,7):gran==="year"?d.slice(0,4):d; }
+function bucketLabel(k){
+  if(gran==="week") return "Wk of "+shortDate(k);
+  if(gran==="month") return parseIso(k+"-01").toLocaleDateString("en-US",{month:"short",year:"numeric"});
+  if(gran==="year") return k;
+  return shortDate(k);
+}
+function bucketBounds(k){
+  if(gran==="week") return [k,addDays(k,6)];
+  if(gran==="month"){ const x=parseIso(k+"-01"); return [k+"-01", iso(new Date(x.getFullYear(),x.getMonth()+1,0))]; }
+  if(gran==="year") return [k+"-01-01",k+"-12-31"];
+  return [k,k];
+}
+function chartWindow(){
+  if(isMulti()) return rangeBounds();
+  if(gran==="week") return [addDays(weekStart(current),-77),current];
+  if(gran==="month"){ const x=parseIso(current); return [iso(new Date(x.getFullYear(),x.getMonth()-11,1)),current]; }
+  if(gran==="year") return [sortedDates()[0]||current,current];
+  return [addDays(current,-29),current];
+}
+function buckets(keep){
+  const [a,b]=chartWindow(), map=new Map();
+  for(const d of sortedDates()){ if(d<a||d>b||!keep(d)) continue; const k=bucketOf(d); if(!map.has(k)) map.set(k,[]); map.get(k).push(d); }
+  if(!isMulti()&&!map.has(bucketOf(current))) map.set(bucketOf(current),[]);
+  return [...map.keys()].sort().map(k=>({key:k,label:bucketLabel(k),days:map.get(k)}));
+}
+const isSel=bk=>!isMulti()&&bk.key===bucketOf(current);
+function drill(bk){
+  if(gran==="day"){ current=bk.key; rangeKey="day"; }
+  else { const [a,b]=bucketBounds(bk.key); rangeKey="custom"; rFrom=a; rTo=b; current=b; setGran("day"); return; }
+  render();
+}
+function chartNote(){
+  const by={day:"By day",week:"By week",month:"By month",year:"By year"}[gran];
+  const span=isMulti()?rangeLabel():({day:"30 days",week:"12 weeks",month:"12 months",year:"all years"}[gran]+" ending "+shortDate(current));
+  return `${by}, ${span}. Click a ${gran} to open it.`;
+}
+
 function prevWithData(s,m){
   const ds=sortedDates();
   for(let i=ds.length-1;i>=0;i--){ if(ds[i]<s){ const t=total(DATA[ds[i]],m); if(t!=null && (t>0||m.kind==="snapshot")) return ds[i]; } }
@@ -519,20 +629,20 @@ function delta(cur,ref,m){
 }
 
 function card(key,compact){
-  const m=METRICS[key], rec=DATA[current], t=total(rec,m), dec=m.dec||0;
-  const a=shiftVal(rec,m,0), b=shiftVal(rec,m,1);
-  const prev=prevWithData(current,m), prevT=prev?total(DATA[prev],m):null, av=avg30(current,m);
+  const m=METRICS[key], days=viewDays(), multi=isMulti(), rec=multi?null:DATA[current], dec=m.dec||0;
+  const t=mTotal(m,days), a=mShift(m,days,0), b=mShift(m,days,1);
+  const prev=multi?null:prevWithData(current,m), prevT=prev?total(DATA[prev],m):null, av=multi?null:avg30(current,m);
   const shiftBox=(lbl,col,v,s)=>{
     let sub="";
     const k=m.kind==="rate"?m.num[s-1]:m.keys[s-1];
     if(v==null && ABSENT.includes(k)) return `<div class="shift"><div class="s-label"><i style="background:${col}"></i>${lbl}</div>
      <div class="s-val missing">Not tracked</div></div>`;
-    if(m.kind==="rate" && rec){ const h=rec[m.den[s-1]], n=rec[m.num[s-1]]; if(h>0 && n!=null) sub=`<div class="s-label" style="margin-top:3px">${fmt(n)} ${m.numName} / ${fmt(h,h%1?1:0)} hrs</div>`; }
+    if(m.kind==="rate"){ const nd=mND(m,days,s-1); if(nd) sub=`<div class="s-label" style="margin-top:3px">${fmt(nd[0])} ${m.numName} / ${fmt(nd[1],nd[1]%1?1:0)} hrs</div>`; }
     return `<div class="shift"><div class="s-label"><i style="background:${col}"></i>${lbl}</div>
      <div class="s-val${v==null?" missing":""}">${v==null?"Not entered":fmt(v,dec)}</div>${sub}</div>`;
   };
   let extra="";
-  const gl=(key==="reach"||key==="ob")?goalFor(current,key):null;
+  const gl=(!multi&&(key==="reach"||key==="ob"))?goalFor(current,key):null;
   if(gl&&t!=null) extra+=`<div class="extra">Daily goal <b>${fmt(gl)}</b> &middot; <b class="${t>=gl?"up":"down"}">${Math.round(t/gl*100)}% of goal</b></div>`;
   if(m.alt){ const tr=rateOf(rec,m.num,m.alt); extra=`<div class="extra">Using total hours (picking + support): <b>${fmt(tr,1)}</b> RPH</div>`; }
   return `<div class="kpi" style="--kpi-accent:${m.color}">
@@ -541,23 +651,56 @@ function card(key,compact){
     <div class="value">${t==null?"\u2014":fmt(t,dec)}<span class="unit">${m.unit}</span></div>
     ${extra}
     ${compact?"":`<div class="shifts">${shiftBox("1st shift",C1,a,1)}${shiftBox("2nd shift",C2,b,2)}</div>`}
-    <div class="compare">
+    <div class="compare">${multi?rangeCompare(m,days,t):`
       <span>vs ${prev?shortDate(prev):"prior day"} (${fmt(prevT,dec)}): ${t==null?"\u2014":delta(t,prevT,m)}</span>
-      <span>vs 30-day avg (${fmt(av,m.kind==="snapshot"?1:dec)}): ${t==null?"\u2014":delta(t,av,m)}</span>
+      <span>vs 30-day avg (${fmt(av,m.kind==="snapshot"?1:dec)}): ${t==null?"\u2014":delta(t,av,m)}</span>`}
     </div>
   </div>`;
 }
 
+function rangeCompare(m,days,t){
+  const n=daysWith(m,days);
+  if(t==null) return "<span>No numbers in this range</span>";
+  if(m.kind==="sum") return `<span>Daily average <b>${fmt(t/n,m.dec||0)}</b> over ${n} day${n===1?"":"s"} with numbers</span>`;
+  if(m.kind==="snapshot"){ const last=[...days].reverse().find(d=>total(DATA[d],m)!=null); return `<span>As of ${shortDate(last)}</span>`; }
+  return `<span>Across ${n} day${n===1?"":"s"}, weighted by hours</span>`;
+}
+// Shared card pieces for the department layouts
+const DEPT={ib:"#a78bfa", ltc:"#2fbf71", ob:"#6f9be0"};
+const deptHead=(color,name)=>`<h3 class="dept-h" style="--dept:${color}">${name}</h3>`;
+const deptGrid=(cards,cols)=>`<section class="kpi-grid three dept-grid" style="--cols:${cols||4}">${cards.join("")}</section>`;
+const kpiCard=(accent,label,value,unit,extra)=>`<div class="kpi" style="--kpi-accent:${accent}"><div class="label">${label}</div>
+  <div class="value">${value}${unit?`<span class="unit">${unit}</span>`:""}</div>${extra?`<div class="extra">${extra}</div>`:""}</div>`;
+// Previous Day Recap: overall numbers by department
+function renderRecap(box,days){
+  const multi=isMulti();
+  const pct=(t,g)=>`<b class="${t>=g?"up":"down"}">${Math.round(t/g*100)}% of goal</b>`;
+  const extra=k=>{
+    const m=METRICS[k], t=mTotal(m,days); if(t==null) return "";
+    if(k==="rph") return `Goal <b>${RPH_GOAL}</b>/hr &middot; ${pct(t,RPH_GOAL)}`;
+    if(!multi){ const g=(k==="reach"||k==="ob")?goalFor(current,k):null; return g?`Daily goal <b>${fmt(g)}</b> &middot; ${pct(t,g)}`:""; }
+    const n=daysWith(m,days); return m.kind==="sum"&&n>1?`Daily average <b>${fmt(t/n)}</b> over ${n} days`:"";
+  };
+  const c=(color,k,label)=>{ const m=METRICS[k], t=mTotal(m,days); return kpiCard(color,label||m.name,t==null?"\u2014":fmt(t,m.dec||0),m.unit,extra(k)); };
+  const ob=[c(DEPT.ob,"ob"),c(DEPT.ob,"obu"),c(DEPT.ob,"inv")];
+  if(mTotal(METRICS.slap,days)>0) ob.push(c(DEPT.ob,"slap"));
+  box.innerHTML=deptHead(DEPT.ib,"Inbound")+deptGrid([c(DEPT.ib,"trl"),c(DEPT.ib,"rcv"),c(DEPT.ib,"ptw")],3)
+    +deptHead(DEPT.ltc,"LTC")+deptGrid([c(DEPT.ltc,"reach"),c(DEPT.ltc,"units"),c(DEPT.ltc,"rph","Reaches per hour")],3)
+    +deptHead(DEPT.ob,"Outbound")+deptGrid(ob,ob.length);
+}
+
 function renderDay(){
   pick.value=current;
-  document.getElementById("dayTitle").textContent=longDate(current);
+  const wipTab=tab==="am"||tab==="ame"||tab==="users";
+  document.getElementById("dayTitle").textContent=wipTab?longDate(current):rangeLabel();
   const last=latestDate();
   document.getElementById("dataMeta").textContent = last ? `Scorecard data through ${shortDate(last)}, ${last.slice(0,4)}` : "";
   const box=document.getElementById("dayContent");
   if(tab==="users"){ renderUsers(box); return; }
+  if(tab==="am") document.getElementById("dataMeta").textContent="";
   if(tab==="am"||tab==="ame"){ renderMorning(box,tab==="ame"); return; }
-  const keys=TABS[tab], rec=DATA[current];
-  const has = rec && keys.some(k=>total(rec,METRICS[k])!=null);
+  const keys=TABS[tab], days=viewDays();
+  const has = (tab==="sum"?["trl","rcv","ptw","reach","units","ob","obu","inv"]:keys).some(k=>mTotal(METRICS[k],days)!=null);
   if(!has && !last){
     box.innerHTML=`<div class="empty"><h3>No scorecard data yet</h3>
       <p>${fbUser?"Nobody has loaded the scorecard yet. Click Load updated scorecard to share it with everyone.":"Sign in to see the shared scorecard."}</p></div>`;
@@ -565,16 +708,19 @@ function renderDay(){
   }
   if(!has){
     const wd=parseIso(current).getDay(), weekend=(wd===0||wd===6);
-    box.innerHTML=`<div class="empty"><h3>No ${TAB_NAMES[tab]} numbers entered for ${shortDate(current)}</h3>
-      <p>${weekend?"This is a weekend day. ":""}${current>last?"The loaded scorecard ends on "+shortDate(last)+". Load an updated scorecard to see newer days.":"Pick another date or jump to the latest day with numbers."}</p>
+    const multi=isMulti();
+    box.innerHTML=`<div class="empty"><h3>No ${TAB_NAMES[tab]} numbers entered for ${multi?rangeLabel():shortDate(current)}</h3>
+      <p>${!multi&&weekend?"This is a weekend day. ":""}${(multi?rangeBounds()[0]:current)>last?"The loaded scorecard ends on "+shortDate(last)+". Load an updated scorecard to see newer days.":"Pick another date or jump to the latest day with numbers."}</p>
       <button type="button" class="btn" id="jumpLatest">Show ${shortDate(last)}</button></div>`;
-    document.getElementById("jumpLatest").onclick=()=>{ current=last; render(); };
+    document.getElementById("jumpLatest").onclick=()=>{ current=last; rangeKey="day"; render(); };
+  }else if(tab==="sum"){
+    renderRecap(box,days);
   }else{
-    const shown=keys.filter(k=>!METRICS[k].optional || total(rec,METRICS[k])>0);
+    const shown=keys.filter(k=>!METRICS[k].optional || mTotal(METRICS[k],days)>0);
     let note="";
     for(const k of keys.filter(k=>METRICS[k].optional && !shown.includes(k))){
-      const m=METRICS[k], last=prevWithData(current,m);
-      note+=`<p class="aside">No ${m.name.toLowerCase()} on this date.${last?` Last time was ${shortDate(last)} (${fmt(total(DATA[last],m))} cartons).`:""}</p>`;
+      const m=METRICS[k], last=prevWithData(isMulti()?addDays(rangeBounds()[1],1):current,m);
+      note+=`<p class="aside">No ${m.name.toLowerCase()} ${isMulti()?"in this range":"on this date"}.${last?` Last time was ${shortDate(last)} (${fmt(total(DATA[last],m))} cartons).`:""}</p>`;
     }
     box.innerHTML=`<section class="kpi-grid ${shown.length>=3?"three":""}" style="--cols:${Math.min(Math.max(shown.length,2),4)}">${shown.map(k=>card(k,tab==="sum")).join("")}</section>${note}`;
   }
@@ -591,25 +737,26 @@ function windowDays(m){
   return days;
 }
 function renderChart(id,key){
-  const m=METRICS[key], days=windowDays(m), col=chartColors(), dec=m.dec||0;
-  const sel = d => d===current;
+  const m=METRICS[key], col=chartColors(), dec=m.dec||0;
+  const days=buckets(d=>{ const t=total(DATA[d],m); return t!=null && ((m.kind==="sum"&&!m.optional)||t>0); });
+  const sel = bk => isSel(bk);
   let cfg;
   if(m.kind==="snapshot"){
-    cfg={type:"line",data:{labels:days.map(shortDate),datasets:[{label:"Open at end of day",data:days.map(d=>total(DATA[d],m)),
+    cfg={type:"line",data:{labels:days.map(b=>b.label),datasets:[{label:"Open at end of day",data:days.map(b=>mTotal(m,b.days)),
       borderColor:m.color,backgroundColor:m.color,borderWidth:2.5,spanGaps:true,stepped:"middle",pointRadius:days.map(d=>sel(d)?6:3)}]},
       nolegend:true};
   }else if(m.kind==="sum"){
-    cfg={type:"bar",data:{labels:days.map(shortDate),datasets:[
-      {label:"1st shift",data:days.map(d=>shiftVal(DATA[d],m,0)??0),backgroundColor:days.map(d=>sel(d)?C1:C1+"99"),stack:"s",borderRadius:2},
-      {label:"2nd shift",data:days.map(d=>shiftVal(DATA[d],m,1)??0),backgroundColor:days.map(d=>sel(d)?C2:C2+"99"),stack:"s",borderRadius:2}]},
+    cfg={type:"bar",data:{labels:days.map(b=>b.label),datasets:[
+      {label:"1st shift",data:days.map(b=>mShift(m,b.days,0)??0),backgroundColor:days.map(b=>sel(b)?C1:C1+"99"),stack:"s",borderRadius:2},
+      {label:"2nd shift",data:days.map(b=>mShift(m,b.days,1)??0),backgroundColor:days.map(b=>sel(b)?C2:C2+"99"),stack:"s",borderRadius:2}]},
       footer:items=>"Total: "+fmt(items.reduce((s,i)=>s+i.parsed.y,0))};
   }else{
     const line=(label,color,fn,w,order)=>({label,data:days.map(fn),borderColor:color,backgroundColor:color,borderWidth:w,spanGaps:true,tension:.25,order,
       pointRadius:days.map(d=>sel(d)?6:3),pointHoverRadius:7});
-    cfg={type:"line",data:{labels:days.map(shortDate),datasets:[
-      line("Combined",CC,d=>total(DATA[d],m),3,3),
-      line("1st shift",C1,d=>shiftVal(DATA[d],m,0),2,1),
-      line("2nd shift",C2,d=>shiftVal(DATA[d],m,1),2,2)]}};
+    cfg={type:"line",data:{labels:days.map(b=>b.label),datasets:[
+      line("Combined",CC,b=>mTotal(m,b.days),3,3),
+      line("1st shift",C1,b=>mShift(m,b.days,0),2,1),
+      line("2nd shift",C2,b=>mShift(m,b.days,1),2,2)]}};
     if(key==="rph") cfg.data.datasets.push({label:"Goal (120/hr)",data:days.map(()=>RPH_GOAL),borderColor:col.text,backgroundColor:col.text,
       borderWidth:2,borderDash:[6,5],pointRadius:0,pointHoverRadius:0,tension:0,order:4});
   }
@@ -619,7 +766,7 @@ function renderChart(id,key){
     options:{
       responsive:true,maintainAspectRatio:false,animation:false,
       interaction:{mode:"index",intersect:false},
-      onClick:(e,els)=>{ if(els.length){ current=days[els[0].index]; render(); } },
+      onClick:(e,els)=>{ if(els.length) drill(days[els[0].index]); },
       plugins:{
         legend:{display:!cfg.nolegend,labels:{color:col.text,boxWidth:10,font:{size:11},sort:(a,b)=>a.datasetIndex-b.datasetIndex}},
         tooltip:{itemSort:(a,b)=>a.datasetIndex-b.datasetIndex,callbacks:{label:i=>i.dataset.label+": "+fmt(i.parsed.y,dec), footer:cfg.footer||(()=>"")}}
@@ -634,15 +781,15 @@ function renderChart(id,key){
 
 function renderPairChart(id){
   const r=METRICS.rcv, p=METRICS.ptw, col=chartColors();
-  const days=[]; for(let i=29;i>=0;i--){ const d=addDays(current,-i); if(total(DATA[d],r)!=null||total(DATA[d],p)!=null||d===current) days.push(d); }
-  const shade=(c,d)=>d===current?c:c+"99";
+  const days=buckets(d=>total(DATA[d],r)!=null||total(DATA[d],p)!=null);
+  const shade=(c,b)=>isSel(b)?c:c+"99";
   if(charts[id]) charts[id].destroy();
   charts[id]=new Chart(document.getElementById(id),{type:"bar",
-    data:{labels:days.map(shortDate),datasets:[
-      {label:"Received",data:days.map(d=>total(DATA[d],r)),backgroundColor:days.map(d=>shade(r.color,d)),borderRadius:2},
-      {label:"Putaway",data:days.map(d=>total(DATA[d],p)),backgroundColor:days.map(d=>shade(p.color,d)),borderRadius:2}]},
+    data:{labels:days.map(b=>b.label),datasets:[
+      {label:"Received",data:days.map(b=>mTotal(r,b.days)),backgroundColor:days.map(b=>shade(r.color,b)),borderRadius:2},
+      {label:"Putaway",data:days.map(b=>mTotal(p,b.days)),backgroundColor:days.map(b=>shade(p.color,b)),borderRadius:2}]},
     options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:"index",intersect:false},
-      onClick:(e,els)=>{ if(els.length){ current=days[els[0].index]; render(); } },
+      onClick:(e,els)=>{ if(els.length) drill(days[els[0].index]); },
       plugins:{legend:{labels:{color:col.text,boxWidth:10,font:{size:11}}},
         tooltip:{callbacks:{label:i=>i.dataset.label+": "+fmt(i.parsed.y)}}},
       scales:{x:{ticks:{color:col.text,font:{size:10},maxRotation:0,autoSkip:true},grid:{display:false}},
@@ -668,17 +815,18 @@ function renderSumChart(id){
 
 function render(){
   renderDay();
-  document.getElementById("chartsSum").hidden = tab!=="sum";
+  syncRangeUI();
+  document.querySelectorAll(".chart-card .note.rn").forEach(n=>n.textContent=chartNote());
+  document.getElementById("chartsSum").hidden = true;
   document.getElementById("chartsIb").hidden = tab!=="ib";
   document.getElementById("chartsLtfc").hidden = tab!=="ltfc";
   document.getElementById("chartsOb").hidden = tab!=="ob";
   if(window.Chart){
-    if(tab==="sum"){ renderSumChart("sumChart"); }
-    else if(tab==="ib"){ renderChart("trlChart","trl"); renderPairChart("pairChart"); renderChart("poChart","po"); }
+    if(tab==="ib"){ renderChart("trlChart","trl"); renderPairChart("pairChart"); renderChart("poChart","po"); }
     else if(tab==="ltfc"){ renderChart("reachChart","reach"); renderChart("unitChart","units"); renderChart("rphChart","rph"); }
     else if(tab==="ob"){ renderChart("obChart","ob"); renderChart("obuChart","obu"); renderChart("invChart","inv"); renderChart("cphChart","cph"); renderChart("slapChart","slap"); }
   }
-  document.getElementById("foot").textContent=(SOURCE&&tab!=="users")?"Source: "+SOURCE+". Blank cells count as not entered, not zero.":"";
+  document.getElementById("foot").textContent=(SOURCE&&tab!=="users"&&tab!=="am")?"Source: "+SOURCE+". Blank cells count as not entered, not zero.":"";
 }
 
 function setTab(t){
@@ -686,11 +834,38 @@ function setTab(t){
   document.querySelectorAll(".tab").forEach(x=>{ const on=x.dataset.tab===t; x.classList.toggle("active",on); x.setAttribute("aria-selected",on); });
   render();
 }
-document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{ if(b.dataset.tab==="sum"&&tab!=="sum") current=recapDay(); else if((b.dataset.tab==="am"||b.dataset.tab==="ame")&&tab!=="am"&&tab!=="ame") current=iso(new Date()); setTab(b.dataset.tab); });
-pick.addEventListener("change",()=>{ if(pick.value){ current=pick.value; render(); } });
-document.getElementById("prevDay").onclick=()=>{ current=addDays(current,-1); render(); };
-document.getElementById("nextDay").onclick=()=>{ current=addDays(current,1); render(); };
-document.getElementById("todayBtn").onclick=()=>{ current=iso(new Date()); render(); };
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{ if(b.dataset.tab==="sum"&&tab!=="sum"){ rangeKey="prev"; current=recapDay(); } else if((b.dataset.tab==="am"||b.dataset.tab==="ame")&&tab!=="am"&&tab!=="ame") current=iso(new Date()); setTab(b.dataset.tab); });
+pick.addEventListener("change",()=>{ if(pick.value){ current=pick.value; rangeKey="day"; render(); } });
+document.getElementById("prevDay").onclick=()=>{ current=addDays(current,-1); rangeKey="day"; render(); };
+document.getElementById("nextDay").onclick=()=>{ current=addDays(current,1); rangeKey="day"; render(); };
+document.getElementById("todayBtn").onclick=()=>{ current=iso(new Date()); rangeKey="day"; render(); };
+const rangeSel=document.getElementById("rangeSel"), rFromEl=document.getElementById("rFrom"), rToEl=document.getElementById("rTo");
+function setGran(g){ gran=g; document.querySelectorAll("#granSeg button").forEach(x=>x.classList.toggle("on",x.dataset.gran===g)); render(); }
+document.querySelectorAll("#granSeg button").forEach(b=>b.onclick=()=>setGran(b.dataset.gran));
+rangeSel.addEventListener("change",()=>{
+  const v=rangeSel.value;
+  if(v==="prev"){ rangeKey="prev"; current=recapDay(); }
+  else if(v==="day"){ rangeKey="day"; }
+  else if(v==="custom"){ const [a,b]=isMulti()?rangeBounds():[addDays(current,-6),current]; rangeKey="custom"; rFrom=a; rTo=b; current=b; }
+  else { rangeKey=v; current=rangeBounds()[1]; }
+  render();
+});
+function customChanged(){
+  let a=rFromEl.value||rFrom, b=rToEl.value||rTo; if(!a||!b) return;
+  if(a>b) [a,b]=[b,a];
+  if(a===b){ rangeKey="day"; current=a; } else { rangeKey="custom"; rFrom=a; rTo=b; current=b; }
+  render();
+}
+rFromEl.addEventListener("change",customChanged); rToEl.addEventListener("change",customChanged);
+function syncRangeUI(){
+  const wipTab=tab==="am"||tab==="ame"||tab==="users";
+  document.getElementById("rangeBar").hidden=wipTab;
+  document.getElementById("granSeg").hidden=tab==="sum";
+  rangeSel.value=rangeKey;
+  rangeSel.querySelector('option[value="day"]').textContent=rangeKey==="day"?shortDate(current)+", "+current.slice(0,4):"Selected day";
+  const custom=rangeKey==="custom"; document.getElementById("customBox").hidden=!custom;
+  if(custom){ rFromEl.value=rFrom; rToEl.value=rTo; }
+}
 
 // ---- Load an updated scorecard (.xlsx) in the browser ----
 const ROWS = {
@@ -902,78 +1077,90 @@ function renderMorning(box,entry){
       ${amRow("Total TT "+k,ttTot(k),"total")}
     </div>`;
   const uwSub=which=>uw&&uw.legacy?"Typed in before the report upload was added":(which==="ltc"?"LTC reaches + NCV FC reaches":"FC reaches, all DTs except NCV");
+  if(amView){
+    // Current WIP: high-level cards for the morning call, by department. Details live on WIP Entry.
+    const D="&mdash;", n0=x=>x==null||x===""?D:fmt(+x,(+x)%1?1:0);
+    const units=x=>x==null?"":`<b>${fmt(x)}</b> units`;
+    const ageOf=iso=>{ if(!iso) return ""; const days=Math.round((parseIso(d)-parseIso(String(iso)))/864e5); return days<=0?"today":days===1?"1 day old":days+" days old"; };
+    const dateVal=iso=>iso?esc(parseIso(String(iso)).toLocaleDateString("en-US",{month:"short",day:"numeric"})):D;
+    const kc=(accent,label,value,unit,extra,cls)=>`<div class="kpi${cls?" "+cls:""}" style="--kpi-accent:${accent}"><div class="label">${label}</div>
+        <div class="value">${value}${unit?`<span class="unit">${unit}</span>`:""}</div>${extra?`<div class="extra">${extra}</div>`:""}</div>`;
+    const notes=(accent,label,pairs)=>{ const rows=pairs.filter(([,x])=>x!=null&&String(x).trim()!==""); return rows.length?`<div class="kpi kpi-notes" style="--kpi-accent:${accent}"><div class="label">${label}</div>
+        ${rows.map(([k,x])=>k?`<div class="note-row"><span>${k}</span><b>${esc(String(x))}</b></div>`:`<div class="note-row"><b style="text-align:left;font-weight:600">${esc(String(x))}</b></div>`).join("")}</div>`:""; };
+    const tt=(k,r,un)=>{ const t=uw&&uw["tt"+k]; return t?[fmt(t[r]),units(t[un])]:[D,uw&&!uw.legacy?"Load the report again to add TT "+k:"Unwaved report not loaded"]; };
+    const sh=s=>s===2?"2nd shift EOS":"1st shift EOS";
+    const IB="#a78bfa", LT="#2fbf71", OB="#6f9be0", T85="#e8a33d", T90="#e2231a";
+    const grid=(cards,cols)=>`<section class="kpi-grid three dept-grid" style="--cols:${cols||4}">${cards.join("")}</section>`;
+    const ttSum=k=>{ const t=uw&&uw["tt"+k]; return t?[fmt(t.ltcReaches+t.obReaches),units(t.ltcUnits+t.obUnits)]:[D,""]; };
+    const head=(color,name,sub)=>`<h3 class="dept-h" style="--dept:${color}">${name}${sub?`<small>${sub}</small>`:""}</h3>`;
+    const l85=tt("85","ltcReaches","ltcUnits"), l90=tt("90","ltcReaches","ltcUnits"), o85=tt("85","obReaches","obUnits"), o90=tt("90","obReaches","obUnits");
+    const pick=`1st: <b>${n0(F.vet1)}</b> vet / <b>${n0(F.trn1)}</b> trainee &middot; 2nd: <b>${n0(F.vet2)}</b> / <b>${n0(F.trn2)}</b>`;
+    const pickers=[F.vet1,F.trn1,F.vet2,F.trn2].some(x=>num(x)!=null)?fmt(nz(F.vet1)+nz(F.trn1)+nz(F.vet2)+nz(F.trn2)):D;
+    box.innerHTML=`
+  ${head(IB,"Inbound")}
+  ${grid([
+    kc(IB,"Lives",n0(F.ibLives),"","Scheduled appointments"),
+    kc(IB,"Drops",n0(F.ibDrops)),
+    kc(IB,"Containers",n0(F.containers)),
+    kc(IB,"Loads on floor",A.loadsFloor==null?D:fmt(A.loadsFloor),"","To receive / put away"),
+    kc(IB,"Pallets PP",A.palletPP==null?D:fmt(A.palletPP)),
+    kc(IB,"Open PO issues",A.poOpen==null?D:fmt(A.poOpen)),
+    kc(IB,"Oldest open PO",dateVal(F.oldestPO),"",ageOf(F.oldestPO)),
+    kc(IB,"Oldest date being worked",dateVal(F.oldestWorked),"",ageOf(F.oldestWorked))])}
+  ${head(LT,"LTC")}
+  ${grid([
+    kc(LT,"Total WIP",cc("ltcTotal"),"reaches",`<span data-c="ltcTotalU">${D}</span> units &middot; <b data-c="ltcDays">${D}</b> days of WIP`),
+    kc(LT,"Goal today",cc("ltcGoal"),"reaches",`1st <b data-c="ltcGoal1">${D}</b> &middot; 2nd <b data-c="ltcGoal2">${D}</b>`),
+    kc(LT,"Reaches waved @ EOS",A.ltcCarry==null?D:fmt(A.ltcCarry),"",[units(A.ltcCarryUnits),a?sh(a.ltcShift):""].filter(Boolean).join(" &middot; ")),
+    kc(LT,"Unwaved",uw&&uw.ltcReaches!=null?fmt(uw.ltcReaches):D,"",uw?units(uw.ltcUnits):"Unwaved report not loaded"),
+    kc(LT,"Pickers",pickers,"",pick)])}
+  ${head(OB,"Outbound")}
+  ${grid([
+    kc(OB,"Total WIP",cc("obTotal"),"reaches",`<span data-c="obTotalU">${D}</span> units &middot; <b data-c="obDays">${D}</b> days of WIP`),
+    kc(OB,"Capacity today",cc("obCap"),"cartons",`Sorter <b data-c="sorterCap">${D}</b> &middot; label slap <b data-c="lsCap">${D}</b>`),
+    kc(OB,"Carryover to pick",A.obCarry==null?D:fmt(A.obCarry),"",`Waved <b>${A.obWaved==null?D:fmt(A.obWaved)}</b> &middot; DZ <b>${A.obDz==null?D:fmt(A.obDz)}</b> &middot; Stat 30 <b>${A.obStat==null?D:fmt(A.obStat)}</b>`),
+    kc(OB,"Unwaved",uw&&uw.obReaches!=null?fmt(uw.obReaches):D,"",uw?units(uw.obUnits):"Unwaved report not loaded"),
+    kc(OB,"Cartons to label slap",n0(F.lsCartons),"",`<b>${n0(F.lsTeams)}</b> teams &times; <b>${n0(F.lsHours)}</b> hrs &middot; loads ready <b>${n0(F.lsLoadsReady)}</b>`),
+    notes(OB,"Load concerns",[["",F.lsConcerns]])])}
+  ${head(T85,"TT 85 unwaved")}
+  ${grid([kc(T85,"LTC",l85[0],"reaches",l85[1]), kc(T85,"Outbound",o85[0],"reaches",o85[1]), kc(T85,"Total",ttSum("85")[0],"reaches",ttSum("85")[1])],3)}
+  ${head(T90,"TT 90 unwaved")}
+  ${grid([kc(T90,"LTC",l90[0],"reaches",l90[1]), kc(T90,"Outbound",o90[0],"reaches",o90[1]), kc(T90,"Total",ttSum("90")[0],"reaches",ttSum("90")[1])],3)}`;
+    updateComputed();
+    return;
+  }
   box.innerHTML=`
   <div class="am-bar"><div>${src}</div><div class="am-actions">${actions}</div></div>
-  <section class="kpi-grid three" style="--cols:4">
-    <div class="kpi" style="--kpi-accent:#2fbf71"><div class="label">LTC work in progress</div><div class="formula">Reaches waved @ EOS + unwaved</div>
-      <div class="value">${cc("ltcTotal")}<span class="unit">reaches</span></div><div class="extra"><b data-c="ltcTotalU">&mdash;</b> units &middot; <b data-c="ltcDays">&mdash;</b> days of WIP</div></div>
-    <div class="kpi" style="--kpi-accent:#2fbf71"><div class="label">LTC goal today</div><div class="formula">Pickers &times; rate &times; hours, both shifts</div>
-      <div class="value">${cc("ltcGoal")}<span class="unit">reaches</span></div><div class="extra">1st shift <b data-c="ltcGoal1">&mdash;</b> &middot; 2nd shift <b data-c="ltcGoal2">&mdash;</b></div></div>
-    <div class="kpi" style="--kpi-accent:#6f9be0"><div class="label">Outbound work in progress</div><div class="formula">Carryover (waved @ EOS + DZ + Stat 30) + unwaved</div>
-      <div class="value">${cc("obTotal")}<span class="unit">reaches</span></div><div class="extra"><b data-c="obTotalU">&mdash;</b> units &middot; <b data-c="obDays">&mdash;</b> days of WIP</div></div>
-    <div class="kpi" style="--kpi-accent:#6f9be0"><div class="label">Outbound capacity today</div><div class="formula">Sorter, both shifts + label slap</div>
-      <div class="value">${cc("obCap")}<span class="unit">cartons</span></div><div class="extra">Sorter <b data-c="sorterCap">&mdash;</b> &middot; label slap <b data-c="lsCap">&mdash;</b></div></div>
-  </section>
   <div class="am-grid">
-    <div class="am-card"><h3>LTC</h3>
-      ${amRow("Reaches waved @ EOS"+TAG,v(A.ltcCarry)+u(A.ltcCarryUnits),"",a?shiftNote(a.ltcShift):"")}
-      ${amRow("Unwaved"+UWTAG,uwVal("ltcReaches","ltcUnits"),"",uwSub("ltc"))}
-      ${amRow("Total WIP",cc("ltcTotal")+`<small><span data-c="ltcTotalU">&mdash;</span> units</small>`,"total")}
-      ${amRow("Days of WIP",cc("ltcDays"),"","Reaches &divide; today's goal. Plan a strategy if over 3")}
-      <div class="am-pick"><div></div><div class="h">1st shift</div><div class="h">2nd shift</div>
-        <div class="lbl">Veteran pickers</div>${fIn("vet1","Veteran pickers, 1st shift")}${fIn("vet2","Veteran pickers, 2nd shift")}
-        <div class="lbl">Trainee pickers</div>${fIn("trn1","Trainee pickers, 1st shift")}${fIn("trn2","Trainee pickers, 2nd shift")}
-        <div class="lbl">Hours</div>${fIn("hrs1","Hours, 1st shift")}${fIn("hrs2","Hours, 2nd shift")}
-        <div class="lbl">Expected reaches</div><div class="val">${cc("ltcGoal1")}</div><div class="val">${cc("ltcGoal2")}</div></div>
-      ${inRow("vetRate","Veteran rate","Reaches per hour")}
-      ${inRow("trnRate","Trainee rate","Reaches per hour")}
-      ${amRow("Goal today",cc("ltcGoal"),"total")}
-      ${inRow("ltcPriority","Priority TTs worked / WIP","","text")}
-    </div>
-    <div class="am-card"><h3>Outbound</h3>
-      ${amRow("Reaches waved @ EOS"+TAG,v(A.obWaved)+u(A.obWavedUnits),"",a?shiftNote(a.obShift):"")}
-      ${amRow("DZ reaches to sort"+TAG,v(A.obDz)+u(A.obDzUnits))}
-      ${amRow("Stat 30 reaches to sort"+TAG,v(A.obStat),"","The scorecard has no Stat 30 units")}
-      ${amRow("Carryover to pick",v(A.obCarry)+u(A.obCarryUnits),"total","Waved + DZ + Stat 30")}
-      ${amRow("Unwaved"+UWTAG,uwVal("obReaches","obUnits"),"",uwSub("ob"))}
-      ${amRow("Total WIP",cc("obTotal")+`<small><span data-c="obTotalU">&mdash;</span> units</small>`,"total")}
-      ${amRow("Days of WIP",cc("obDays"),"","Reaches &divide; today's capacity. Plan a strategy if over 3")}
-      ${inRow("obTasks","# Tasks")}
-      ${inRow("sorter1","Sorter capacity, 1st shift","Cartons")}
-      ${inRow("sorter2","Sorter capacity, 2nd shift","Cartons")}
-      ${inRow("obPriority","Priority TT / ISD","","text")}
-      ${inRow("latePickup","Late pickup alerts","","text")}
-      ${inRow("trailerNeeds","Trailer needs","","text")}
-    </div>
-    ${ttCard("85")}
-    ${ttCard("90")}
     <div class="am-card"><h3>Inbound</h3>
-      ${amRow("Lives (scheduled appointments)"+TAG,v(A.lives))}
-      ${amRow("Drops"+TAG,v(A.drops))}
+      ${inRow("ibLives","Lives","Scheduled appointments")}
+      ${inRow("ibDrops","Drops")}
       ${inRow("containers","Containers")}
-      ${amRow("Loads to receive / put away on floor"+TAG,v(A.loadsFloor))}
-      ${amRow("Pallets PP"+TAG,v(A.palletPP))}
-      ${amRow("Open PO issues"+TAG,v(A.poOpen))}
       ${inRow("oldestPO","Oldest open PO date","","date")}
       ${inRow("oldestWorked","Oldest date being worked","","date")}
-      ${inRow("oldestReason","Reason, if over 48 hours","","text")}
+    </div>
+    <div class="am-card"><h3>LTC</h3>
+      <div class="am-pick" style="border-top:none"><div></div><div class="h">1st shift</div><div class="h">2nd shift</div>
+        <div class="lbl">Veteran pickers</div>${fIn("vet1","Veteran pickers, 1st shift")}${fIn("vet2","Veteran pickers, 2nd shift")}
+        <div class="lbl">Trainee pickers</div>${fIn("trn1","Trainee pickers, 1st shift")}${fIn("trn2","Trainee pickers, 2nd shift")}
+        <div class="lbl">Hours</div>${fIn("hrs1","Hours, 1st shift")}${fIn("hrs2","Hours, 2nd shift")}</div>
+      ${inRow("vetRate","Veteran rate","Reaches per hour")}
+      ${inRow("trnRate","Trainee rate","Reaches per hour")}
+    </div>
+    <div class="am-card"><h3>Outbound</h3>
+      ${inRow("sorter1","Sorter capacity, 1st shift","Cartons")}
+      ${inRow("sorter2","Sorter capacity, 2nd shift","Cartons")}
     </div>
     <div class="am-card"><h3>Label slap</h3>
       ${inRow("lsCartons","Cartons to slap today")}
       ${inRow("lsTeams","Teams","3 people per team")}
       ${inRow("lsHours","Hours")}
       ${inRow("lsRate","Cartons per team per hour")}
-      ${amRow("Expected output",cc("lsCap"),"total")}
       ${inRow("lsLoadsReady","Loads ready to load out")}
       ${inRow("lsConcerns","Load concerns","","text")}
     </div>
-    <div class="am-card"><h3>Yesterday<small>${a?esc(longDate(a.src)):""}</small></h3>
-      ${amRow("LTFC reaches picked"+TAG,v(A.ltcPicked)+vsGoal(A.ltcPicked,pg.ltc))}
-      ${amRow("Cartons sorted"+TAG,v(A.obSorted)+vsGoal(A.obSorted,pg.sorter))}
-      ${amRow("Cartons label slapped"+TAG,v(A.slapped))}
-      ${amRow("Units picked"+TAG,v(A.unitsPrev),"","LTFC + OB FC, both shifts")}
+    <div class="am-card"><h3>Previous day</h3>
       ${inRow("laborHours","Labor hours")}
-      ${amRow("UPH",cc("uph"),"total","Units picked &divide; labor hours")}
       ${areaRow("wentWell","What went well")}
       ${areaRow("struggles","What didn't go well / struggles that affected UPH")}
     </div>
@@ -992,29 +1179,21 @@ function renderMorning(box,entry){
       ${inRow("availSingle","Available single locations")}
       ${inRow("availMulti","Available multi-pallet locations")}
       ${inRow("availPallet","Available pallet positions (&gt;1)")}
-      ${amRow("Pallet positions filled",cc("filled"),"total","Locations &minus; available single &minus; available multi")}
-      ${amRow("% full",cc("storPct"),"total","Filled &divide; pallet positions")}
     </div>
     <div class="am-card"><h3>Yard</h3>
       ${inRow("yardPos","Trailer positions on yard","Includes trailers for active OB loads")}
       ${inRow("yardTrailers","Physical trailers on yard","Empty and loaded")}
-      ${amRow("Available yard spots",cc("yardAvail"),"total")}
-      ${amRow("% full",cc("yardPct"),"total")}
       ${inRow("ibEmpties","IB empties (non-pool)")}
       ${inRow("yardNote","Notes","","text")}
     </div>
   </div>`;
-  if(amView){
-    document.getElementById("amEdit").onclick=()=>setTab("ame");
-  }else{
-    box.querySelectorAll(".am-in").forEach(el=>el.addEventListener("input",()=>{
-      const f=el.dataset.f; amForm[f]=el.type==="number"?(el.value===""?"":+el.value):el.value;
-      markDraft(current); updateComputed(); amStatus();
-    }));
-    document.getElementById("amSave").onclick=saveMorning;
-    document.getElementById("uwBtn").onclick=()=>document.getElementById("uwIn").click();
-    document.getElementById("uwIn").addEventListener("change",loadUnwaved);
-  }
+  box.querySelectorAll(".am-in").forEach(el=>el.addEventListener("input",()=>{
+    const f=el.dataset.f; amForm[f]=el.type==="number"?(el.value===""?"":+el.value):el.value;
+    markDraft(current); amStatus();
+  }));
+  document.getElementById("amSave").onclick=saveMorning;
+  document.getElementById("uwBtn").onclick=()=>document.getElementById("uwIn").click();
+  document.getElementById("uwIn").addEventListener("change",loadUnwaved);
   updateComputed(); amStatus();
 }
 function markDraft(d){ if(!amDrafts[d]){ amDrafts[d]=amForm; draftBase[d]=MORNING[d]&&MORNING[d].savedAt; } }
@@ -1125,7 +1304,8 @@ async function loadUnwaved(e){
 async function saveMorning(){
   if(!mdb||amSaving) return;
   const d=current, f={...amForm}, body={form:f, goals:goalsOf(f), savedAt:new Date().toISOString()};
-  const a=autoFor(d); if(a) body.auto=a;
+  const a=autoFor(d), sa=MORNING[d]&&MORNING[d].auto, best=(sa&&(!a||sa.src>a.src))?sa:a;
+  if(best) body.auto=best;
   const uw=amUW[d]||(MORNING[d]&&MORNING[d].unwaved); if(uw) body.unwaved=uw;
   try{ const id=muser?await muser.id():null; if(id) body.savedBy=id; }catch(e){}
   amSaving=true; const btn=document.getElementById("amSave"); if(btn) btn.disabled=true;
@@ -1372,20 +1552,19 @@ setTimeout(()=>{ if(!fbHeard) toast(location.protocol==="file:"?FILE_NOTE:"Could
 
 // ---- Email this day's report ----
 const DASH_URL = location.href.split("#")[0];
-const EMAIL_SECTIONS = [["Summary","sum"]];
+const EMAIL_SECTIONS = [["Inbound","rib"],["LTC","rltc"],["Outbound","rob"]];
+TABS.rib=["trl","rcv","ptw"]; TABS.rltc=["reach","units","rph"]; TABS.rob=["ob","obu","inv","slap"];
 const esc = t => String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function emailRows(tabKey){
-  const rec=DATA[current];
-  return TABS[tabKey].filter(k=>{ const m=METRICS[k]; return !m.optional || total(rec,m)>0; }).map(k=>{
-    const m=METRICS[k], dec=m.dec||0, shw=tabKey!=="sum";
-    const a=shiftVal(rec,m,0), b=shiftVal(rec,m,1);
-    return {name:(tabKey==="sum"&&m.sumName)?m.sumName:m.name, total:fmt(total(rec,m),dec), unit:m.unit,
-      s1:shw?(a==null?"not entered":fmt(a,dec)):"", s2:shw?(b==null?"not entered":fmt(b,dec)):""};
+  const days=viewDays();
+  return TABS[tabKey].filter(k=>{ const m=METRICS[k]; return !m.optional || mTotal(m,days)>0; }).map(k=>{
+    const m=METRICS[k], dec=m.dec||0;
+    return {name:m.name, total:fmt(mTotal(m,days),dec), unit:m.unit, s1:"", s2:""};
   });
 }
-function emailSubject(){ return "Daily Output \u2013 "+longDate(current); }
+function emailSubject(){ return "Daily Output \u2013 "+rangeLabel(); }
 function emailText(){
-  let t="Daily Output recap for "+longDate(current)+"\n";
+  let t="Daily Output recap for "+rangeLabel()+"\n";
   for(const [title,key] of EMAIL_SECTIONS){
     t+="\n"+title.toUpperCase()+"\n";
     for(const r of emailRows(key)) t+="  "+r.name+": "+r.total+" "+r.unit+(r.s1!==""?"  (1st "+r.s1+" / 2nd "+r.s2+")":"")+"\n";
@@ -1400,7 +1579,7 @@ function emailHtml(){
     <div style="font-size:13px;color:#c9d6ea;margin-top:2px;">${esc(longDate(current))} &middot; CEVA Logistics / BBW</div>
   </div>`;
   for(const [title,key] of EMAIL_SECTIONS){
-    const rows=emailRows(key), shw=key!=="sum";
+    const rows=emailRows(key), shw=false;
     h+=`<div style="font-size:13px;font-weight:700;letter-spacing:.5px;color:#e2231a;margin:18px 0 6px;padding:0 4px;">${title.toUpperCase()}</div>
     <table cellpadding="0" cellspacing="0" style="${F}border-collapse:collapse;width:100%;font-size:14px;">
       <tr style="background:#eef2f7;color:#4a5f7a;font-size:12px;">
