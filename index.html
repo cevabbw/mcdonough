@@ -144,7 +144,19 @@ button:focus-visible,input:focus-visible{outline:2px solid #3d9fe8;outline-offse
   border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;}
 .subj{margin-top:6px;font-size:14px;font-weight:600;color:var(--text);}
 .preview-wrap{background:#fff;border-radius:8px;max-height:46vh;overflow:auto;margin:6px 0 16px;}
-.preview-wrap.shot{background:var(--bg);padding:10px;}
+.preview-wrap.shot{background:var(--bg);padding:10px;max-height:52vh;}
+.send-pick{margin-top:6px;position:relative;}
+.send-pick summary{list-style:none;cursor:pointer;background:var(--bg);border:1px solid var(--card-border-light);border-radius:8px;padding:10px 36px 10px 12px;font-size:14px;font-weight:600;color:var(--text);position:relative;}
+.send-pick summary::-webkit-details-marker{display:none;}
+.send-pick summary::after{content:"\25BE";position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--text-dim);}
+.send-pick[open] summary{border-color:#3d9fe8;}
+.send-opts{border:1px solid var(--card-border-light);border-top:none;border-radius:0 0 8px 8px;padding:6px 12px;background:var(--bg);}
+.send-opts label{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;}
+.send-opts input{width:18px;height:18px;accent-color:#e2231a;}
+/* Layout used only while the email screenshot is taken (the email dialog covers the page meanwhile) */
+body.shooting .sched-grid{grid-template-columns:1fr !important;}
+body.shooting .sched-wrap{overflow:visible;}
+body.shooting .kpi .value,body.shooting .sched-head .value,body.shooting .dayline h2{letter-spacing:0;font-variant-numeric:normal;}
 #emailPreview img{display:block;width:100%;height:auto;border-radius:6px;}
 .shot-wait{margin:30px 0;text-align:center;color:var(--text-dim);font-size:13px;}
 .modal-note b{color:var(--text-dim);}
@@ -471,14 +483,23 @@ onAuthStateChanged(auth, u => window.dispatchEvent(new CustomEvent("fb-auth", {
 <div class="modal-back" id="emailModal" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="emailTitle">
     <div class="modal-head">
-      <h3 id="emailTitle">Email this day's report</h3>
+      <h3 id="emailTitle">Email the dashboard</h3>
       <button type="button" class="close" id="emailClose" aria-label="Close">&times;</button>
     </div>
     <label class="field">To <span>(optional, separate with ;)</span>
       <input type="text" id="emailTo" placeholder="name@cevalogistics.com; ...">
     </label>
     <div class="field">Subject<div class="subj" id="emailSubj"></div></div>
-    <div class="preview-wrap shot"><div id="emailPreview"><p class="shot-wait">Taking a screenshot of the summary&hellip;</p></div></div>
+    <div class="field">What to send
+      <details class="send-pick" id="sendPick">
+        <summary id="sendSummary">Previous Day Recap + Current WIP</summary>
+        <div class="send-opts">
+          <label><input type="checkbox" value="sum" checked> Previous Day Recap</label>
+          <label><input type="checkbox" value="am" checked> Current WIP</label>
+        </div>
+      </details>
+    </div>
+    <div class="preview-wrap shot"><div id="emailPreview"><p class="shot-wait">Taking a screenshot&hellip;</p></div></div>
     <div class="modal-actions">
       <button type="button" class="btn primary" id="emailOpen">Open in email app</button>
       <button type="button" class="btn" id="emailCopy">Copy screenshot</button>
@@ -1838,7 +1859,7 @@ function emailRows(tabKey){
     return {name:m.name, total:fmt(mTotal(m,days),dec), unit:m.unit, s1:"", s2:""};
   });
 }
-function emailSubject(){ return "Daily Output \u2013 "+rangeLabel(); }
+function emailSubject(){ return "Daily Output \u2013 "+longDate(iso(new Date())); }
 function emailText(){
   let t="Daily Output recap for "+rangeLabel()+"\n";
   for(const [title,key] of EMAIL_SECTIONS){
@@ -1880,34 +1901,61 @@ try{ toInput.value=localStorage.getItem("bbw-email-to")||""; }catch(e){}
 toInput.addEventListener("change",()=>{ try{ localStorage.setItem("bbw-email-to",toInput.value.trim()); }catch(e){} });
 let shotBlob=null, shotPromise=null;
 function waitFrame(){ return new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))); }
-async function captureSummary(){
-  if(!window.html2canvas) throw new Error("no-h2c");
-  const prevTab=tab;
-  if(tab!=="sum"){ setTab("sum"); await waitFrame(); }
+const SEND_LABEL={sum:"Previous Day Recap", am:"Current WIP"};
+const sendChoice=()=>[...document.querySelectorAll('#sendPick input:checked')].map(i=>i.value);
+// Render one tab the way it opens by default, then photograph the whole page (no buttons, tabs or footer).
+async function captureTab(t, withHeader, bg, scale){
+  if(t==="sum"){ rangeKey="prev"; current=recapDay(); }
+  else { current=iso(new Date()); schedOpen={SB2:true,BBWD:true}; }
+  setTab(t); await waitFrame();
   const wrap=document.querySelector(".wrap");
-  const bg=getComputedStyle(document.body).backgroundColor;
-  try{
-    const canvas=await html2canvas(wrap,{backgroundColor:bg,scale:Math.min(2,Math.max(1,devicePixelRatio||1)),logging:false,
-      ignoreElements:el=>el.classList&&(el.classList.contains("controls")||el.classList.contains("tabs")||el.id==="foot")});
-    return await new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(new Error("blob")),"image/png"));
-  }finally{
-    if(prevTab!=="sum") setTab(prevTab);
-  }
+  return html2canvas(wrap,{backgroundColor:bg,scale,logging:false,windowWidth:Math.max(1280,document.documentElement.clientWidth),
+    ignoreElements:el=>el.id==="foot"||el.id==="rangeBar"||(el.classList&&(el.classList.contains("controls")||el.classList.contains("tabs")))||(!withHeader&&el.matches&&el.matches("header.top"))});
 }
-function openEmail(){
-  document.getElementById("emailSubj").textContent=emailSubject();
-  const pv=document.getElementById("emailPreview");
-  pv.innerHTML='<p class="shot-wait">Taking a screenshot of the summary&hellip;</p>';
-  modal.hidden=false; document.getElementById("emailOpen").focus();
+async function captureSelected(){
+  if(!window.html2canvas) throw new Error("no-h2c");
+  const pick=sendChoice(); if(!pick.length) throw new Error("none");
+  const keep={tab, current, rangeKey, rFrom, rTo, schedOpen:{...schedOpen}};
+  const bg=getComputedStyle(document.body).backgroundColor, scale=Math.min(2,Math.max(1,devicePixelRatio||1));
+  const parts=[];
+  document.body.classList.add("shooting");
+  try{
+    for(let i=0;i<pick.length;i++) parts.push(await captureTab(pick[i], i===0, bg, scale));
+  }finally{
+    tab=keep.tab; current=keep.current; rangeKey=keep.rangeKey; rFrom=keep.rFrom; rTo=keep.rTo; schedOpen=keep.schedOpen;
+    document.body.classList.remove("shooting");
+    setTab(keep.tab);
+  }
+  // Stack the pages into one picture, with a thin divider between them.
+  const gap=Math.round(28*scale), w=Math.max(...parts.map(c=>c.width)), h=parts.reduce((t,c)=>t+c.height,0)+gap*(parts.length-1);
+  const out=document.createElement("canvas"); out.width=w; out.height=h;
+  const g=out.getContext("2d"); g.fillStyle=bg; g.fillRect(0,0,w,h);
+  let y=0;
+  parts.forEach((c,i)=>{ if(i){ g.fillStyle="#2a4a73"; g.fillRect(Math.round(28*scale),y+Math.round(gap/2)-1,w-Math.round(56*scale),Math.max(1,Math.round(scale))); y+=gap; } g.drawImage(c,0,y); y+=c.height; });
+  return new Promise((res,rej)=>out.toBlob(x=>x?res(x):rej(new Error("blob")),"image/png"));
+}
+function takeShot(){
+  const pv=document.getElementById("emailPreview"), pick=sendChoice();
+  document.getElementById("sendSummary").textContent=pick.length?pick.map(k=>SEND_LABEL[k]).join(" + "):"Nothing selected";
+  ["emailOpen","emailCopy","emailSave"].forEach(id=>document.getElementById(id).disabled=!pick.length);
   shotBlob=null;
-  shotPromise=captureSummary().then(b=>{
-    shotBlob=b; const img=new Image(); img.alt="Summary screenshot"; img.src=URL.createObjectURL(b);
+  if(!pick.length){ pv.innerHTML='<p class="shot-wait">Check at least one page to send.</p>'; shotPromise=null; return; }
+  pv.innerHTML='<p class="shot-wait">Taking a screenshot&hellip;</p>';
+  const mine=shotPromise=captureSelected().then(b=>{
+    if(mine!==shotPromise) return b;
+    shotBlob=b; const img=new Image(); img.alt="Screenshot to send"; img.src=URL.createObjectURL(b);
     pv.innerHTML=""; pv.appendChild(img); return b;
   }).catch(e=>{
-    pv.innerHTML='<p class="shot-wait">The screenshot couldn\u2019t be made here. The draft will still include the numbers and the dashboard link.</p>';
+    if(mine===shotPromise) pv.innerHTML='<p class="shot-wait">The screenshot couldn’t be made here. Try again, or take one with the Snipping Tool.</p>';
     throw e;
   });
   shotPromise.catch(()=>{});
+}
+document.querySelectorAll('#sendPick input').forEach(i=>i.addEventListener("change",takeShot));
+function openEmail(){
+  document.getElementById("emailSubj").textContent=emailSubject();
+  modal.hidden=false; document.getElementById("emailOpen").focus();
+  takeShot();
 }
 function closeEmail(){ modal.hidden=true; document.getElementById("emailBtn").focus(); }
 document.getElementById("emailBtn").onclick=openEmail;
@@ -1947,7 +1995,7 @@ document.getElementById("emailCopy").onclick=()=>{
   btn.onclick=async()=>{
     try{
       const b=shotBlob || await shotPromise;
-      const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="Daily Output Recap "+current+".png";
+      const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="Daily Output "+iso(new Date())+".png";
       document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500);
       toast("Saved. Drag the image into your email or attach it.");
     }catch(e){ toast("Couldn\u2019t save the screenshot."); }
