@@ -151,6 +151,9 @@ button:focus-visible,input:focus-visible{outline:2px solid #3d9fe8;outline-offse
 .modal-actions{display:flex;gap:10px;flex-wrap:wrap;}
 .modal-note{font-size:12px;color:var(--text-faint);margin:12px 0 0;line-height:1.5;}
 .btn.primary{color:#fff;}
+.btn.up-ob{background:#2f6fd0;border-color:#2f6fd0;color:#fff;}
+.btn.up-ob:hover{background:#2560b8;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
 .am-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--card);
   border:1px solid var(--card-border);border-radius:var(--radius);padding:12px 16px;margin-bottom:18px;font-size:13px;color:var(--text-dim);}
 .am-bar b{color:var(--text);}
@@ -191,12 +194,40 @@ input.am-in[type=date]{background:var(--bg);color:var(--text);width:160px;font-s
 .dept-h{display:flex;align-items:baseline;gap:10px;margin:26px 0 12px;font-size:18px;font-weight:800;}
 .dept-h::before{content:"";width:5px;height:20px;border-radius:2px;background:var(--dept);align-self:center;}
 .dept-h small{font-size:12.5px;font-weight:600;color:var(--text-faint);}
+.pp-set{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:18px 0 6px;font-size:13.5px;color:var(--text-dim);}
+.pp-set b{color:var(--text);}
+.pp-set .am-in{width:130px;}
+.bad-list{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.bad-chips{display:flex;flex-wrap:wrap;gap:8px;flex:1;min-width:0;}
+.bad-chips span{font-family:ui-monospace,Consolas,monospace;font-size:13px;font-weight:600;padding:5px 9px;border-radius:6px;background:rgba(255,90,82,.12);color:var(--text);border:1px solid rgba(255,90,82,.35);}
 #dayContent > .dept-h:first-child{margin-top:4px;}
 .dept-grid{margin-bottom:8px;}
 .dept-grid .kpi .value{font-size:36px;}
 .kpi-notes .note-row{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--text-dim);padding:6px 0;border-top:1px solid var(--card-border);}
 .kpi-notes .label + .note-row{margin-top:10px;border-top:none;}
 .kpi-notes .note-row b{color:var(--text);font-weight:700;text-align:right;}
+.kpi-notes .note-row b.up{color:var(--good);} .kpi-notes .note-row b.down{color:#e8a33d;}
+.sched-grid{align-items:start;}
+.kpi.sched{padding:0;}
+.sched-head{all:unset;box-sizing:border-box;display:grid;grid-template-columns:1fr auto;grid-template-areas:"l c" "v c" "e c";width:100%;padding:22px 26px 20px 30px;cursor:pointer;border-radius:var(--radius);}
+.sched-head:focus-visible{outline:2px solid #3d9fe8;outline-offset:-2px;}
+.sched-head .label{grid-area:l;font-size:13px;color:var(--text-dim);font-weight:700;}
+.sched-head .value{grid-area:v;font-size:36px;font-weight:900;margin-top:10px;line-height:1;letter-spacing:-1px;font-variant-numeric:tabular-nums;}
+.sched-head .extra{grid-area:e;font-size:12.5px;color:var(--text-dim);margin-top:8px;}
+.sched-head .extra b{color:var(--text);}
+.sched-head .chev{grid-area:c;align-self:center;color:var(--text-dim);font-size:12px;}
+.sched-wrap{overflow-x:auto;padding:0 18px 16px 22px;}
+.sched-t{width:100%;border-collapse:collapse;font-size:13px;}
+.sched-t th{text-align:left;font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--text-faint);font-weight:700;padding:8px 8px;border-bottom:1px solid var(--card-border);white-space:nowrap;}
+.sched-t td{padding:9px 8px;border-bottom:1px solid var(--card-border);white-space:nowrap;font-variant-numeric:tabular-nums;}
+.sched-t tr.late td:first-child{color:#e8a33d;font-weight:700;}
+.sched-t td.dep{text-align:right;}
+.sched-t th:last-child{text-align:right;}
+.dep-pill{font:inherit;font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px;border:1px solid var(--card-border-light);background:transparent;color:var(--text-dim);cursor:pointer;white-space:nowrap;}
+.dep-pill:hover{border-color:#93a8c4;color:var(--text);}
+.dep-pill.on{background:rgba(47,191,113,.15);border-color:rgba(47,191,113,.5);color:var(--good);}
+.dep-pill.locked{cursor:default;display:inline-block;}
+.dep-pill:disabled{cursor:not-allowed;opacity:.7;}
 .u-act{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
 .u-act .btn{padding:7px 12px;}
 .u-row{display:grid;grid-template-columns:minmax(0,1fr) 130px 150px;gap:8px 14px;align-items:center;padding:10px 0;border-top:1px solid var(--card-border);font-size:13.5px;}
@@ -222,7 +253,7 @@ input.am-in[type=date]{background:var(--bg);color:var(--text);width:160px;font-s
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, initializeAuth, inMemoryPersistence, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // Firebase web config. These values identify the project; they are not secrets.
 // Access is controlled by Firebase Authentication + the database rules (database.rules.json).
@@ -249,6 +280,8 @@ window.FB = {
   },
   listen: (path, next, err) => onValue(ref(db, path), snap => next(snap.val()), err),
   write: (path, value) => set(ref(db, path), value),
+  // Changes only the listed paths and leaves everything else in the database alone.
+  update: changes => update(ref(db), changes),
   // Creates a sign-in account without signing the admin out (needs "Enable create (sign-up)" on in Firebase).
   createAccount: async (email, pass) => {
     if (!window.__fbAdminAuth) window.__fbAdminAuth = initializeAuth(initializeApp(firebaseConfig, "account-maker"), { persistence: inMemoryPersistence });
@@ -284,8 +317,8 @@ onAuthStateChanged(auth, u => window.dispatchEvent(new CustomEvent("fb-auth", {
       <button type="button" class="btn" id="todayBtn">Today</button>
       <button type="button" class="btn" id="acctBtn">Sign in</button>
       <button type="button" class="btn" id="emailBtn">&#9993;&nbsp; Email</button>
-      <button type="button" class="btn primary" id="uploadBtn">Load updated scorecard</button>
       <input type="file" id="fileIn" accept=".xlsx,.xlsm,.xls" hidden>
+      <input type="file" id="schedIn" accept=".xlsx,.xlsm,.xls" hidden>
     </div>
   </header>
 
@@ -296,6 +329,7 @@ onAuthStateChanged(auth, u => window.dispatchEvent(new CustomEvent("fb-auth", {
     <button type="button" class="tab" data-tab="ib" role="tab">Inbound</button>
     <button type="button" class="tab" data-tab="ltfc" role="tab">LTFC</button>
     <button type="button" class="tab" data-tab="ob" role="tab">Outbound</button>
+    <button type="button" class="tab" data-tab="stor" role="tab">Storage Capacity &amp; Utilization</button>
     <button type="button" class="tab" data-tab="users" role="tab" id="usersTab" hidden>Users</button>
   </nav>
 
@@ -489,7 +523,7 @@ METRICS.ptw={name:"Pallets putaway", unit:"pallets", kind:"sum", keys:["ip1","ip
 METRICS.po={name:"Open PO issues", unit:"open", kind:"snapshot", keys:["po1","po2"], lowerBetter:true,
   formula:"Open at end of day: 2nd shift count, or 1st if 2nd is blank", color:"#e2231a"};
 const TABS = {sum:["ob","inv","reach"], ib:["trl","rcv","ptw","po"], ltfc:["reach","units","rph"], ob:["ob","cph","obu","inv","slap"]};
-const TAB_NAMES = {users:"users", am:"WIP", ame:"WIP", sum:"recap", ib:"inbound", ltfc:"LTFC", ob:"outbound"};
+const TAB_NAMES = {stor:"storage", users:"users", am:"WIP", ame:"WIP", sum:"recap", ib:"inbound", ltfc:"LTFC", ob:"outbound"};
 let tab = "sum";
 
 const fmt = (n,dec=0) => n==null||!isFinite(n) ? "\u2014" : Number(n).toLocaleString("en-US",{minimumFractionDigits:dec,maximumFractionDigits:dec});
@@ -665,6 +699,105 @@ function rangeCompare(m,days,t){
   if(m.kind==="snapshot"){ const last=[...days].reverse().find(d=>total(DATA[d],m)!=null); return `<span>As of ${shortDate(last)}</span>`; }
   return `<span>Across ${n} day${n===1?"":"s"}, weighted by hours</span>`;
 }
+// Storage Capacity & Utilization (from the Open Location tab of the day's unwaved report)
+// The setting wins; before anyone sets it, fall back to the last value typed on the old WIP Entry storage card.
+function palletPositions(){
+  if(num(SETTINGS.palletPositions)>0) return num(SETTINGS.palletPositions);
+  const ds=Object.keys(MORNING).sort().reverse();
+  for(const d of ds){ const v=num(MORNING[d]&&MORNING[d].form&&MORNING[d].form.palletPos); if(v>0) return v; }
+  return null;
+}
+function renderStorage(box){
+  const doc=MORNING[current], uw=doc&&doc.unwaved, st=uw&&uw.storage, F=(doc&&doc.form)||{};
+  if(!st){
+    box.innerHTML=`<div class="empty"><h3>No storage numbers for ${shortDate(current)}</h3>
+      <p>${uw&&!uw.legacy?"The unwaved report loaded for this day has no Open Location tab. Load a newer report on WIP Entry.":"Load this morning's unwaved report on WIP Entry to fill this tab."}</p></div>`+ppSetHtml();
+    wirePP();
+    return;
+  }
+  const S="#e8a33d", H="#e2231a", R="#6f9be0", FL="#2fbf71", BAD="#ff5a52", D="—";
+  const pp=palletPositions(), filled=pp>0?pp-st.openSpots:null, pct=pp>0?Math.round(filled/pp*1000)/10:null;
+  const top=x=>`<b>${fmt(x.top)}</b> on the top level (60L / 60R)`;
+  const bad=st.bad||[];
+  let html=deptHead(S,"Overall")+deptGrid([
+    kpiCard(S,"% full",pct==null?D:pct.toFixed(1),pct==null?"":"%",pp>0?`<b>${fmt(filled)}</b> of <b>${fmt(pp)}</b> pallet positions filled`:"Set the total pallet positions below"),
+    kpiCard(S,"Open pallet spots",fmt(st.openSpots),"","Haz room, reserve rack and floor"),
+    kpiCard(S,"Open locations",fmt(st.openLocs),"",st.other&&st.other.locs?`Includes <b>${fmt(st.other.locs)}</b> outside these groups`:""),
+    kpiCard(BAD,"Bad locations",fmt(bad.length),"",bad.length?"Left out of every number. Send to IT to remove.":"None today")],4);
+  html+=deptHead(H,"Haz room <small>A00–A06</small>")+deptGrid([
+    kpiCard(H,"Open locations",fmt(st.haz.locs),"",top(st.haz)),
+    kpiCard(H,"Top level",fmt(st.haz.top),"","Ends in 60L or 60R")],2);
+  html+=deptHead(R,"Reserve rack <small>D06–D16</small>")+deptGrid([
+    kpiCard(R,"Open locations",fmt(st.reserve.locs),"",top(st.reserve)),
+    kpiCard(R,"Top level",fmt(st.reserve.top),"","Ends in 60L or 60R")],2);
+  html+=deptHead(FL,"Floor <small>M and C locations, 10 pallets each</small>")+deptGrid([
+    kpiCard(FL,"Open locations",fmt(st.floor.locs),""),
+    kpiCard(FL,"Open pallet spots",fmt(st.floor.spots),"",`<b>${fmt(st.floor.onHand)}</b> pallets already in these locations`)],2);
+  if(bad.length) html+=deptHead(BAD,"Bad locations to send to IT")+`<div class="kpi bad-list" style="--kpi-accent:${BAD}">
+      <div class="bad-chips">${bad.map(b=>`<span>${esc(b)}</span>`).join("")}</div>
+      <button type="button" class="btn" id="badCopy">Copy list</button></div>`;
+  box.innerHTML=html+ppSetHtml();
+  wirePP();
+  const cb=document.getElementById("badCopy");
+  if(cb) cb.onclick=()=>{ const t=bad.join("\n"); (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast(bad.length+" bad locations copied.")).catch(()=>toast("Select the list and press Ctrl+C.")); };
+}
+function ppSetHtml(){ const pp=palletPositions();
+  return `<div class="pp-set" id="ppSet">Total pallet positions on hand: <b>${pp>0?fmt(pp):"not set"}</b>
+    ${canWrite?`<button type="button" class="btn" id="ppEdit">Change</button>`:""}</div>`; }
+function wirePP(){
+  const pp=palletPositions(), pe=document.getElementById("ppEdit");
+  if(pe) pe.onclick=()=>{
+    const wrap=document.getElementById("ppSet");
+    wrap.innerHTML=`Total pallet positions on hand: <input class="am-in" type="number" id="ppVal" min="1" step="1" value="${pp>0?pp:""}" aria-label="Total pallet positions on hand">
+      <button type="button" class="btn primary" id="ppSave">Save</button><button type="button" class="btn" id="ppCancel">Cancel</button>`;
+    document.getElementById("ppVal").focus();
+    document.getElementById("ppCancel").onclick=()=>render();
+    document.getElementById("ppSave").onclick=()=>{
+      const v=num(document.getElementById("ppVal").value);
+      if(!(v>0)) return toast("Enter a number above zero.");
+      FB.write("settings/palletPositions",Math.round(v)).then(()=>toast("Total pallet positions set to "+fmt(v)+".")).catch(fbErr);
+    };
+  };
+}
+// Scheduled loads from the week of date d onward. Each card opens to the loads, with a Departed toggle that everyone shares.
+let schedOpen={SB2:false,BBWD:false};
+function schedSection(d,F){
+  const SL="#e8a33d", wk=weekStart(d), we=addDays(wk,6), today=iso(new Date());
+  const day=x=>parseIso(x).toLocaleDateString("en-US",{weekday:"short",month:"numeric",day:"numeric"});
+  const dep=(SCHED&&SCHED.departed)||{};
+  const all=SCHED?(SCHED.list||[]).filter(l=>!l.cancelled&&l.exp>=wk).sort((a,b)=>a.exp.localeCompare(b.exp)||String(a.rts||"").localeCompare(String(b.rts||""))):[];
+  const done=l=>!!(l.act||dep[l.key]);
+  const pill=l=>{
+    if(l.act) return `<span class="dep-pill on locked" title="Actual depart date is in the outbound schedule">&#10003; Departed ${esc(day(l.act))}</span>`;
+    const on=!!dep[l.key], who=on?`Checked by ${dep[l.key].by||"someone"} ${dep[l.key].at?new Date(dep[l.key].at).toLocaleDateString("en-US",{month:"short",day:"numeric"}):""}`:"Mark as departed";
+    return `<button type="button" class="dep-pill${on?" on":""}" data-dep="${esc(l.key)}" aria-pressed="${on}" title="${esc(who)}"${canWrite?"":" disabled"}>${on?"&#10003; Departed":"Departed"}</button>`;
+  };
+  const row=l=>`<tr class="${!done(l)&&l.exp<today?"late":""}"><td>${esc(day(l.exp))}</td><td>${esc(l.rts||"—")}</td><td>${esc(l.load||"—")}</td>${l.kind==="BBWD"?`<td>${esc(l.store||"?")}</td>`:""}<td>${esc(l.carrier||"—")}</td><td class="dep">${pill(l)}</td></tr>`;
+  const card=kind=>{
+    const ls=all.filter(l=>l.kind===kind), wkN=ls.filter(l=>l.exp<=we).length, open=ls.filter(l=>!done(l)).length;
+    const head=`<button type="button" class="sched-head" data-open="${kind}" aria-expanded="${schedOpen[kind]}">
+        <span class="label">${kind}</span>
+        <span class="value">${SCHED?ls.length:"—"}<span class="unit">scheduled</span></span>
+        <span class="extra">${SCHED?`<b>${wkN}</b> this week &middot; <b>${ls.length-wkN}</b> later &middot; <b>${open}</b> not departed`:"Load the outbound schedule on WIP Entry"}</span>
+        <span class="chev" aria-hidden="true">${schedOpen[kind]?"&#9650;":"&#9660;"}</span></button>`;
+    const body=schedOpen[kind]&&SCHED?(ls.length?`<div class="sched-wrap"><table class="sched-t"><thead><tr><th>Depart</th><th>RTS #</th><th>Load #</th>${kind==="BBWD"?"<th>Store</th>":""}<th>Carrier</th><th>Departed</th></tr></thead>
+        <tbody>${ls.map(row).join("")}</tbody></table></div>`:`<p class="modal-note">Nothing scheduled from this week on.</p>`):"";
+    return `<div class="kpi sched${schedOpen[kind]?" open":""}" style="--kpi-accent:${SL}">${head}${body}</div>`;
+  };
+  const text=(label,v)=>`<div class="kpi kpi-notes" style="--kpi-accent:${SL}"><div class="label">${label}</div>
+      <div class="note-row"><b style="text-align:left;font-weight:600">${v&&String(v).trim()?esc(v):"—"}</b></div></div>`;
+  return `<h3 class="dept-h" style="--dept:${SL}">Scheduled loads<small>From the week of ${esc(shortDate(wk))} on</small></h3>
+    <section class="kpi-grid three dept-grid sched-grid" style="--cols:2">${card("SB2")}${card("BBWD")}${text("BIA",F.bia)}${text("Other non-DA loads",F.nonDa)}</section>`;
+}
+function wireSched(box){
+  box.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{ schedOpen[b.dataset.open]=!schedOpen[b.dataset.open]; render(); });
+  box.querySelectorAll("[data-dep]").forEach(b=>b.onclick=()=>{
+    const k=b.dataset.dep, on=b.getAttribute("aria-pressed")!=="true";
+    b.disabled=true;
+    FB.write("schedule/departed/"+k, on?{by:fbUser.name, at:new Date().toISOString()}:null)
+      .catch(e=>{ fbErr(e); b.disabled=false; });
+  });
+}
 // Shared card pieces for the department layouts
 const DEPT={ib:"#a78bfa", ltc:"#2fbf71", ob:"#6f9be0"};
 const deptHead=(color,name)=>`<h3 class="dept-h" style="--dept:${color}">${name}</h3>`;
@@ -691,19 +824,20 @@ function renderRecap(box,days){
 
 function renderDay(){
   pick.value=current;
-  const wipTab=tab==="am"||tab==="ame"||tab==="users";
+  const wipTab=tab==="am"||tab==="ame"||tab==="users"||tab==="stor";
   document.getElementById("dayTitle").textContent=wipTab?longDate(current):rangeLabel();
   const last=latestDate();
   document.getElementById("dataMeta").textContent = last ? `Scorecard data through ${shortDate(last)}, ${last.slice(0,4)}` : "";
   const box=document.getElementById("dayContent");
   if(tab==="users"){ renderUsers(box); return; }
+  if(tab==="stor"){ document.getElementById("dataMeta").textContent=""; renderStorage(box); return; }
   if(tab==="am") document.getElementById("dataMeta").textContent="";
   if(tab==="am"||tab==="ame"){ renderMorning(box,tab==="ame"); return; }
   const keys=TABS[tab], days=viewDays();
   const has = (tab==="sum"?["trl","rcv","ptw","reach","units","ob","obu","inv"]:keys).some(k=>mTotal(METRICS[k],days)!=null);
   if(!has && !last){
     box.innerHTML=`<div class="empty"><h3>No scorecard data yet</h3>
-      <p>${fbUser?"Nobody has loaded the scorecard yet. Click Load updated scorecard to share it with everyone.":"Sign in to see the shared scorecard."}</p></div>`;
+      <p>${fbUser?"Nobody has loaded the scorecard yet. Use Load updated scorecard on the WIP Entry tab to share it with everyone.":"Sign in to see the shared scorecard."}</p></div>`;
     return;
   }
   if(!has){
@@ -826,7 +960,7 @@ function render(){
     else if(tab==="ltfc"){ renderChart("reachChart","reach"); renderChart("unitChart","units"); renderChart("rphChart","rph"); }
     else if(tab==="ob"){ renderChart("obChart","ob"); renderChart("obuChart","obu"); renderChart("invChart","inv"); renderChart("cphChart","cph"); renderChart("slapChart","slap"); }
   }
-  document.getElementById("foot").textContent=(SOURCE&&tab!=="users"&&tab!=="am")?"Source: "+SOURCE+". Blank cells count as not entered, not zero.":"";
+  document.getElementById("foot").textContent=(SOURCE&&!["users","am","stor"].includes(tab))?"Source: "+SOURCE+". Blank cells count as not entered, not zero.":"";
 }
 
 function setTab(t){
@@ -834,7 +968,7 @@ function setTab(t){
   document.querySelectorAll(".tab").forEach(x=>{ const on=x.dataset.tab===t; x.classList.toggle("active",on); x.setAttribute("aria-selected",on); });
   render();
 }
-document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{ if(b.dataset.tab==="sum"&&tab!=="sum"){ rangeKey="prev"; current=recapDay(); } else if((b.dataset.tab==="am"||b.dataset.tab==="ame")&&tab!=="am"&&tab!=="ame") current=iso(new Date()); setTab(b.dataset.tab); });
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{ if(b.dataset.tab==="sum"&&tab!=="sum"){ rangeKey="prev"; current=recapDay(); } else if(["am","ame","stor"].includes(b.dataset.tab)&&!["am","ame","stor"].includes(tab)) current=iso(new Date()); setTab(b.dataset.tab); });
 pick.addEventListener("change",()=>{ if(pick.value){ current=pick.value; rangeKey="day"; render(); } });
 document.getElementById("prevDay").onclick=()=>{ current=addDays(current,-1); rangeKey="day"; render(); };
 document.getElementById("nextDay").onclick=()=>{ current=addDays(current,1); rangeKey="day"; render(); };
@@ -858,7 +992,7 @@ function customChanged(){
 }
 rFromEl.addEventListener("change",customChanged); rToEl.addEventListener("change",customChanged);
 function syncRangeUI(){
-  const wipTab=tab==="am"||tab==="ame"||tab==="users";
+  const wipTab=tab==="am"||tab==="ame"||tab==="users"||tab==="stor";
   document.getElementById("rangeBar").hidden=wipTab;
   document.getElementById("granSeg").hidden=tab==="sum";
   rangeSel.value=rangeKey;
@@ -956,22 +1090,37 @@ function parseWorkbook(buf){
   if(!Object.keys(out).length) throw new Error("No dated values found in row 1.");
   return {data:out, absent:missing};
 }
-document.getElementById("uploadBtn").onclick=()=>document.getElementById("fileIn").click();
+
 document.getElementById("fileIn").addEventListener("change",async e=>{
   const f=e.target.files[0]; if(!f) return;
   try{
     if(!window.XLSX) throw new Error("The spreadsheet reader didn't load. Check your connection and try again.");
     const parsed=parseWorkbook(await f.arrayBuffer());
-    if(fbUser && lastKey(DATA) && lastKey(parsed.data) < lastKey(DATA))
-      throw new Error(`It ends on ${shortDate(lastKey(parsed.data))}, which is older than the shared scorecard (${shortDate(lastKey(DATA))}), so it wasn't loaded.`);
-    DATA=parsed.data; ABSENT=parsed.absent; SOURCE=f.name+", loaded "+new Date().toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})+(fbUser?" by "+fbUser.name:"");
+    // Merge into what's saved: days and numbers already there are kept. A file at least as new as the saved
+    // scorecard can correct a number; an older file can only fill in numbers that are missing.
+    const older=!!(lastKey(DATA) && lastKey(parsed.data) < lastKey(DATA));
+    const changes={}, merged=JSON.parse(JSON.stringify(DATA||{}));
+    let added=0, corrected=0;
+    for(const [d,rec] of Object.entries(parsed.data)){
+      for(const [k,v] of Object.entries(rec)){
+        const had=merged[d]&&merged[d][k];
+        if(had===v) continue;
+        if(had!=null&&older) continue;
+        (merged[d]=merged[d]||{})[k]=v; changes["scorecard/data/"+d+"/"+k]=v;
+        if(had==null) added++; else corrected++;
+      }
+    }
+    DATA=merged; ABSENT=parsed.absent; SOURCE=f.name+", loaded "+new Date().toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})+(fbUser?" by "+fbUser.name:"");
     try{ localStorage.setItem(STORE_KEY,JSON.stringify({data:DATA,label:SOURCE,absent:ABSENT})); }catch(err){}
     const today=iso(new Date());
     current = (tab==="am"||tab==="ame") ? today : tab==="sum" ? recapDay() : (DATA[today] ? today : latestDate());
-    render(); toast("Loaded "+f.name+": data through "+shortDate(latestDate())+".");
+    render();
+    const what=`${fmt(added)} new and ${fmt(corrected)} updated number${added+corrected===1?"":"s"}`+(older?" (older file: only missing numbers were added)":"");
+    toast("Loaded "+f.name+": "+what+".",9000);
     if(window.FB && fbUser && canWrite){
-      FB.write("scorecard",{data:DATA, absent:ABSENT, label:SOURCE, loadedAt:new Date().toISOString(), loadedBy:fbUser.name})
-        .then(()=>toast("Loaded and shared: everyone now sees data through "+shortDate(latestDate())+"."))
+      Object.assign(changes,{"scorecard/absent":ABSENT,"scorecard/label":SOURCE,"scorecard/loadedAt":new Date().toISOString(),"scorecard/loadedBy":fbUser.name});
+      FB.update(changes)
+        .then(()=>toast("Loaded and shared: "+what+". Data through "+shortDate(latestDate())+".",9000))
         .catch(err=>toast("Loaded on this computer only. It couldn't be shared: "+err.message,12000));
     } else if(fbUser){ toast("Loaded on this computer only: your account has view-only access.",9000); }
   }catch(err){ toast("Couldn't load "+f.name+". "+err.message, 12000); }
@@ -1061,13 +1210,18 @@ function renderMorning(box,entry){
   const vsGoal=(act,g)=>(g>0&&act!=null)?`<small>goal ${fmt(g)} &middot; <b class="${act>=g?"up":"down"}">${Math.round(act/g*100)}%</b></small>`:"";
   const pw=prevWorkday(d);
   const stale=a&&a.src<pw;
-  let src=a?`Carryover and yesterday's results come from the scorecard's end of day for <b>${esc(longDate(a.src))}</b>.`+(stale?` <span class="dirty">${esc(longDate(pw))} isn't in the loaded scorecard yet, so these are older numbers. Click Load updated scorecard first.</span>`:"")
+  let src=a?`Carryover and yesterday's results come from the scorecard's end of day for <b>${esc(longDate(a.src))}</b>.`+(stale?` <span class="dirty">${esc(longDate(pw))} isn't in the loaded scorecard yet, so these are older numbers. Load the updated scorecard on WIP Entry first.</span>`:"")
            :`The loaded scorecard has no end-of-day WIP before ${esc(shortDate(d))}. Load an updated scorecard to fill the carryover.`;
+  if(!amView&&SCHED&&SCHED.file) src+=` Outbound schedule from <b>${esc(SCHED.file)}</b>, loaded ${esc(new Date(SCHED.loadedAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))}.`;
   if(uw&&!uw.legacy&&uw.file) src+=` Unwaved from <b>${esc(uw.file)}</b>${uw.loadedAt?", loaded "+esc(new Date(uw.loadedAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})):""}.`;
   if(amView&&!saved) src+=` <span class="dirty">Today's WIP numbers haven't been saved yet.</span>`;
   const actions=amView
     ?`<span id="amStatus"></span><button type="button" class="btn" id="amEdit">Edit in WIP Entry</button>`
-    :`<span id="amStatus"></span><button type="button" class="btn" id="uwBtn"${(canWrite===false||!mdb)?" disabled":""}>Load unwaved report</button><input type="file" id="uwIn" accept=".xlsx,.xlsm,.xls" hidden><button type="button" class="btn primary" id="amSave"${(canWrite===false||!mdb)?" disabled":""}>Save WIP numbers</button>`;
+    :`<span id="amStatus"></span>
+      <button type="button" class="btn up-sc" id="scBtn"${(canWrite===false||!mdb)?" disabled":""}>Load updated scorecard</button>
+      <button type="button" class="btn up-uw" id="uwBtn"${(canWrite===false||!mdb)?" disabled":""}>Load unwaved report</button><input type="file" id="uwIn" accept=".xlsx,.xlsm,.xls" hidden>
+      <button type="button" class="btn up-ob" id="obBtn"${(canWrite===false||!mdb)?" disabled":""}>Load outbound schedule</button>
+      <button type="button" class="btn primary" id="amSave"${(canWrite===false||!mdb)?" disabled":""}>Save WIP numbers</button>`;
   const uwVal=(r,un)=>uw&&uw[r]!=null?fmt(uw[r])+u(uw[un]):(uw?'<span class="miss">not entered</span>':'<span class="miss">not loaded</span>');
   const ttVal=(k,r,un)=>{ const t=uw&&uw["tt"+k]; return t?fmt(t[r])+u(t[un]):(uw&&!uw.legacy?`<span class="miss">load the report again to add TT ${k}</span>`:'<span class="miss">not loaded</span>'); };
   const ttTot=k=>{ const t=uw&&uw["tt"+k]; return t?fmt(t.ltcReaches+t.obReaches)+u(t.ltcUnits+t.obUnits):'<span class="miss">&mdash;</span>'; };
@@ -1125,7 +1279,9 @@ function renderMorning(box,entry){
   ${head(T85,"TT 85 unwaved")}
   ${grid([kc(T85,"LTC",l85[0],"reaches",l85[1]), kc(T85,"Outbound",o85[0],"reaches",o85[1]), kc(T85,"Total",ttSum("85")[0],"reaches",ttSum("85")[1])],3)}
   ${head(T90,"TT 90 unwaved")}
-  ${grid([kc(T90,"LTC",l90[0],"reaches",l90[1]), kc(T90,"Outbound",o90[0],"reaches",o90[1]), kc(T90,"Total",ttSum("90")[0],"reaches",ttSum("90")[1])],3)}`;
+  ${grid([kc(T90,"LTC",l90[0],"reaches",l90[1]), kc(T90,"Outbound",o90[0],"reaches",o90[1]), kc(T90,"Total",ttSum("90")[0],"reaches",ttSum("90")[1])],3)}
+  ${schedSection(d,F)}`;
+    wireSched(box);
     updateComputed();
     return;
   }
@@ -1159,32 +1315,10 @@ function renderMorning(box,entry){
       ${inRow("lsLoadsReady","Loads ready to load out")}
       ${inRow("lsConcerns","Load concerns","","text")}
     </div>
-    <div class="am-card"><h3>Previous day</h3>
-      ${inRow("laborHours","Labor hours")}
-      ${areaRow("wentWell","What went well")}
-      ${areaRow("struggles","What didn't go well / struggles that affected UPH")}
-    </div>
-    <div class="am-card"><h3>Building</h3>
-      ${inRow("sb2","SB2","","text")}
-      ${inRow("fedex","FedEx","","text")}
-      ${inRow("bbwd","BBWD","","text")}
+    <div class="am-card"><h3>Scheduled loads</h3>
+      <p class="modal-note" style="margin:0 0 4px">SB2 and BBWD come from the outbound schedule. Type BIA and other non-DA loads here.</p>
       ${inRow("bia","BIA","","text")}
-      ${inRow("w2w","W2W","","text")}
       ${inRow("nonDa","Other non-DA loads","","text")}
-      ${inRow("loadPlanning","Load planning","","text")}
-    </div>
-    <div class="am-card"><h3>Storage capacity</h3>
-      ${inRow("locOnHand","Total locations on hand")}
-      ${inRow("palletPos","Total pallet positions on hand")}
-      ${inRow("availSingle","Available single locations")}
-      ${inRow("availMulti","Available multi-pallet locations")}
-      ${inRow("availPallet","Available pallet positions (&gt;1)")}
-    </div>
-    <div class="am-card"><h3>Yard</h3>
-      ${inRow("yardPos","Trailer positions on yard","Includes trailers for active OB loads")}
-      ${inRow("yardTrailers","Physical trailers on yard","Empty and loaded")}
-      ${inRow("ibEmpties","IB empties (non-pool)")}
-      ${inRow("yardNote","Notes","","text")}
     </div>
   </div>`;
   box.querySelectorAll(".am-in").forEach(el=>el.addEventListener("input",()=>{
@@ -1194,6 +1328,8 @@ function renderMorning(box,entry){
   document.getElementById("amSave").onclick=saveMorning;
   document.getElementById("uwBtn").onclick=()=>document.getElementById("uwIn").click();
   document.getElementById("uwIn").addEventListener("change",loadUnwaved);
+  document.getElementById("scBtn").onclick=()=>document.getElementById("fileIn").click();
+  document.getElementById("obBtn").onclick=()=>document.getElementById("schedIn").click();
   updateComputed(); amStatus();
 }
 function markDraft(d){ if(!amDrafts[d]){ amDrafts[d]=amForm; draftBase[d]=MORNING[d]&&MORNING[d].savedAt; } }
@@ -1287,16 +1423,100 @@ function parseUnwaved(wb){
   }
   throw new Error("Couldn't find the unwaved detail columns (DT, TT, FCReaches, FCUnits, LTCReaches, LTCUnits) or the pivot table.");
 }
+// Open Location tab (hidden) of the unwaved report.
+// Rack locations look like D060140L: aisle D06, bay 01, level 40, side L. Level 60 is the top level.
+//   Haz room = A00-A06, Reserve rack = D06-D16, Floor = starts with M or C (10 pallets each).
+//   BLK storage-trailer spots and P (reserve partial) are left out quietly. G... and names that don't start with a letter ($..., 40...) are bad.
+function parseOpenLoc(wb){
+  const name=wb.SheetNames.find(n=>/^open\s*locations?$/i.test(n.trim())); if(!name) return null;
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:null});
+  const hr=rows.findIndex(r=>r&&r.some(c=>String(c??"").trim()==="Location"));
+  if(hr<0) return null;
+  const h=rows[hr].map(c=>String(c??"").trim()), L=h.indexOf("Location"), P=h.indexOf("PalletsOnHand"), A=h.indexOf("AvailableLocations");
+  if(L<0||A<0) return null;
+  const g=()=>({locs:0,top:0,spots:0,onHand:0});
+  const out={haz:g(),reserve:g(),floor:g(),other:g(),bad:[],blkSkipped:0};
+  for(let i=hr+1;i<rows.length;i++){
+    const r=rows[i]; if(!r) continue;
+    const loc=String(r[L]??"").trim().toUpperCase(); if(!loc) continue;
+    const av=typeof r[A]==="number"?r[A]:0, ph=P>=0&&typeof r[P]==="number"?r[P]:0;
+    if(loc.startsWith("BLK")||loc.startsWith("P")){ out.blkSkipped++; continue; }   // not bad, just not counted
+    if(/^G/.test(loc)||!/^[A-Z]/.test(loc)){ out.bad.push(loc); continue; }
+    const m=/^([A-Z])(\d{2})\d{2}(\d{2})[LR]$/.exec(loc);
+    let grp;
+    if(m){ const a=+m[2]; grp=(m[1]==="A"&&a<=6)?"haz":(m[1]==="D"&&a>=6&&a<=16)?"reserve":"other"; }
+    else if(/^[MC]/.test(loc)) grp="floor";
+    else { out.bad.push(loc); continue; }
+    const x=out[grp]; x.locs++; x.spots+=av; x.onHand+=ph; if(m&&m[3]==="60") x.top++;
+  }
+  out.openLocs=out.haz.locs+out.reserve.locs+out.floor.locs+out.other.locs;
+  out.openSpots=out.haz.spots+out.reserve.spots+out.floor.spots+out.other.spots;
+  out.bad.sort();
+  return out;
+}
+// Outbound Schedule workbook, "Loads" tab. Column E = Expected Depart Date, F = Actual Depart Date, G = notes (SB2 / BBWD ####).
+let SCHED=null, SETTINGS={};
+function cellIso(v){
+  if(v instanceof Date) return iso(new Date(v.getFullYear(),v.getMonth(),v.getDate()+(v.getHours()>=12?1:0)));
+  if(typeof v==="string"){ const m=/^\s*(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})\s*$/.exec(v); if(m){ const y=+m[3]<100?2000+(+m[3]):+m[3]; return iso(new Date(y,+m[1]-1,+m[2])); } }
+  return null;
+}
+function parseSchedule(wb){
+  const name=wb.SheetNames.find(n=>/^loads$/i.test(n.trim()));
+  if(!name) throw new Error("There's no tab named Loads in this file.");
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:null});
+  const hr=rows.findIndex(r=>r&&r.some(c=>/expected depart/i.test(String(c??""))));
+  if(hr<0) throw new Error("The Loads tab has no Expected Depart Date column.");
+  const h=rows[hr].map(c=>String(c??"").trim()), col=re=>h.findIndex(x=>re.test(x));
+  const E=col(/expected depart/i), F=col(/actual depart/i), G=col(/^notes/i), L=col(/^load\s*#/i), C=col(/^carrier$/i), D=col(/^destination/i), R=col(/^rts/i);
+  if(G<0) throw new Error("The Loads tab has no Notes / Carrier column (column G).");
+  const loads=[];
+  for(let i=hr+1;i<rows.length;i++){
+    const r=rows[i]; if(!r) continue;
+    const note=String(r[G]??"").trim(), up=note.toUpperCase(); if(!note) continue;
+    const bb=/BBWD\s*(\d{4})/.exec(up);
+    const kind=bb||/BBWD/.test(up)?"BBWD":/(^|[^A-Z0-9])SB2([^A-Z0-9]|$)/.test(up)?"SB2":null; if(!kind) continue;
+    const exp=cellIso(r[E]); if(!exp) continue;
+    const ld={exp, kind, note};
+    if(/CANCEL/.test(up)) ld.cancelled=true;
+    if(R>=0&&r[R]) ld.rts=String(r[R]).trim();
+    const act=F>=0?cellIso(r[F]):null; if(act) ld.act=act;
+    if(bb) ld.store=bb[1];
+    if(L>=0&&r[L]!=null&&r[L]!=="") ld.load=String(r[L]);
+    if(C>=0&&r[C]) ld.carrier=String(r[C]).trim();
+    if(D>=0&&r[D]) ld.dest=String(r[D]).trim();
+    // One record per load: the RTS # when there is one, otherwise load # + date.
+    ld.key=(ld.rts||("L"+(ld.load||"")+"_"+exp+"_"+(ld.store||ld.kind))).replace(/[.#$\[\]\/]/g,"_");
+    loads.push(ld);
+  }
+  loads.sort((a,b)=>a.exp.localeCompare(b.exp));
+  return loads;
+}
+document.getElementById("schedIn").addEventListener("change",async e=>{
+  const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  try{
+    if(!window.XLSX) throw new Error("The spreadsheet reader didn't load. Check your connection and try again.");
+    const loads=parseSchedule(XLSX.read(await f.arrayBuffer(),{type:"array",cellDates:true}));
+    if(!(window.FB&&fbUser&&canWrite)) throw new Error("You need edit access to share the outbound schedule.");
+    // Merge: each load in the file updates its own record; loads already saved but not in this file are kept.
+    const changes={"schedule/file":f.name,"schedule/loadedAt":new Date().toISOString(),"schedule/loadedBy":fbUser.name};
+    for(const l of loads){ const {key,...rec}=l; changes["schedule/loads/"+key]=JSON.parse(JSON.stringify(rec)); }
+    await FB.update(changes);
+    const wk=weekStart(iso(new Date())), n=loads.filter(l=>!l.cancelled&&l.exp>=wk).length;
+    toast(`Outbound schedule loaded: ${n} SB2/BBWD load${n===1?"":"s"} from this week on.`,8000);
+  }catch(err){ toast("Couldn't load "+f.name+". "+err.message,12000); }
+});
 async function loadUnwaved(e){
   const f=e.target.files[0]; e.target.value=""; if(!f) return;
   try{
     if(!window.XLSX) throw new Error("The spreadsheet reader didn't load. Check your connection and try again.");
-    const r=parseUnwaved(XLSX.read(await f.arrayBuffer(),{type:"array"}));
+    const wbk=XLSX.read(await f.arrayBuffer(),{type:"array"});
+    const r=parseUnwaved(wbk); r.storage=parseOpenLoc(wbk);
     const d=current;
     amUW[d]={...r, file:f.name, loadedAt:new Date().toISOString()};
     delete amForm.ltcUnwaved; delete amForm.obUnwaved;
     markDraft(d);
-    toast(`Unwaved loaded: LTC ${fmt(r.ltcReaches)} reaches, outbound ${fmt(r.obReaches)} reaches`+(r.tt85?` (TT 85: LTC ${fmt(r.tt85.ltcReaches)}, outbound ${fmt(r.tt85.obReaches)})`:"")+(r.tt90?` (TT 90: LTC ${fmt(r.tt90.ltcReaches)}, outbound ${fmt(r.tt90.obReaches)})`:"")+".",9000);
+    toast(`Unwaved loaded: LTC ${fmt(r.ltcReaches)} reaches, outbound ${fmt(r.obReaches)} reaches`+(r.tt85?` (TT 85: LTC ${fmt(r.tt85.ltcReaches)}, outbound ${fmt(r.tt85.obReaches)})`:"")+(r.tt90?` (TT 90: LTC ${fmt(r.tt90.ltcReaches)}, outbound ${fmt(r.tt90.obReaches)})`:"")+"."+(r.storage?` Storage: ${fmt(r.storage.openSpots)} open pallet spots`+(r.storage.bad.length?`, ${r.storage.bad.length} bad location${r.storage.bad.length>1?"s":""} left out.`:"."):""),10000);
     amDate=d; render();
     await saveMorning();
   }catch(err){ toast("Couldn't load "+f.name+". "+err.message,12000); }
@@ -1354,7 +1574,7 @@ window.addEventListener("fb-auth",e=>{
   mdb=null; muser=null; canWrite=null;
   if(!fbUser){
     // Signed out: nothing from the database stays on this computer.
-    DATA={}; MORNING={}; SOURCE=""; ABSENT=[]; try{ localStorage.removeItem(STORE_KEY); }catch(err){}
+    DATA={}; MORNING={}; SOURCE=""; ABSENT=[]; SCHED=null; SETTINGS={}; try{ localStorage.removeItem(STORE_KEY); }catch(err){}
     amDate=null; render(); showAuth("signin"); return;
   }
   FB.write("users/"+fbUser.uid,{email:fbUser.email, name:fbUser.name, lastSignIn:new Date().toISOString()}).catch(()=>{});
@@ -1488,6 +1708,13 @@ function startData(){
     if(tab==="ame"&&amDrafts[current]){ updateComputed(); amStatus(); return; }
     render();
   }, fbErr));
+  fbOff.push(FB.listen("schedule", v=>{
+    if(v){ const L=v.loads||{}; v.list=Array.isArray(L)?L.filter(Boolean).map((l,i)=>({...l,key:l.rts||("old"+i)})):Object.entries(L).map(([k,l])=>({...l,key:k})); }
+    SCHED=v||null;
+    if(tab==="ame"&&amDrafts[current]){ amStatus(); return; }
+    if(tab==="am"||tab==="ame") render();
+  }, fbErr));
+  fbOff.push(FB.listen("settings", v=>{ SETTINGS=v||{}; if(tab==="stor") render(); }, fbErr));
   fbOff.push(FB.listen("morning", v=>{
     MORNING=v||{};
     if(tab==="ame"&&amDrafts[current]){ updateComputed(); amStatus(); return; } // never wipe what someone is typing
@@ -1648,7 +1875,7 @@ function copyShot(){
 }
 function mailtoUrl(){
   const to=toInput.value.split(/[;,]/).map(x=>x.trim()).filter(Boolean).join(";");
-  return "mailto:"+encodeURIComponent(to).replace(/%40/g,"@").replace(/%3B/g,";")+"?subject="+encodeURIComponent(emailSubject())+"&body="+encodeURIComponent(emailText());
+  return "mailto:"+encodeURIComponent(to).replace(/%40/g,"@").replace(/%3B/g,";")+"?subject="+encodeURIComponent(emailSubject());
 }
 document.getElementById("emailOpen").onclick=()=>{
   const copied=copyShot();
@@ -1659,7 +1886,7 @@ document.getElementById("emailOpen").onclick=()=>{
     toast("Screenshot copied. In the draft, click in the body and press Ctrl+V.");
     note.innerHTML="Screenshot copied. In the draft, click in the body and press <b>Ctrl+V</b>. If no draft opened, your browser blocked it here: start a new email yourself and paste.";
   },()=>{
-    note.innerHTML="The draft has the numbers and link, but this browser wouldn\u2019t copy the image from here."+(document.getElementById("emailSave").hidden?" Right-click the screenshot above and choose <b>Copy image</b>, then paste it into the draft.":" Use <b>Download screenshot</b> and drag the file into the draft, or right-click the screenshot above and choose <b>Copy image</b>.");
+    note.innerHTML="The draft is open, but this browser wouldn\u2019t copy the image from here."+(document.getElementById("emailSave").hidden?" Right-click the screenshot above and choose <b>Copy image</b>, then paste it into the draft.":" Use <b>Download screenshot</b> and drag the file into the draft, or right-click the screenshot above and choose <b>Copy image</b>.");
   });
 };
 document.getElementById("emailCopy").onclick=()=>{
