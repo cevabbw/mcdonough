@@ -326,6 +326,18 @@ body{background-color:#f3f6fd;
 .kpi,.am-card,.chart-card{box-shadow:0 2px 6px rgba(20,33,90,.06);}
 .dept-h{color:#14215a;}
 @media (max-width:600px){header.top{padding:18px 16px;} header.top .brand{padding:10px 12px;}}
+
+/* Flash tab */
+.fl-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:0 0 6px;}
+.fl-week{font-size:14px;color:var(--text-dim);}
+.fl-actions{display:flex;flex-wrap:wrap;gap:8px;}
+.fl-card{padding:6px 10px 10px;margin-bottom:6px;}
+.fl-chart{margin-bottom:12px;}
+.fl-wrap{overflow-x:auto;}
+.fl-t th.n,.fl-t td.n{text-align:right;}
+.fl-t th{white-space:normal;vertical-align:bottom;line-height:1.25;min-width:64px;}
+.fl-t tfoot td{font-weight:800;border-top:2px solid var(--text);border-bottom:none;}
+.fl-note{margin:8px 2px 0;font-size:12px;}
 </style>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -407,6 +419,7 @@ onAuthStateChanged(auth, u => window.dispatchEvent(new CustomEvent("fb-auth", {
     <button type="button" class="tab" data-tab="ib" role="tab">Inbound</button>
     <button type="button" class="tab" data-tab="ltfc" role="tab">LTFC</button>
     <button type="button" class="tab" data-tab="ob" role="tab">Outbound</button>
+    <button type="button" class="tab" data-tab="flash" role="tab">Flash</button>
     <button type="button" class="tab" data-tab="users" role="tab" id="usersTab" hidden>Users</button>
     <button type="button" class="tab" data-tab="ame" role="tab">WIP Entry</button>
   </nav>
@@ -439,6 +452,11 @@ onAuthStateChanged(auth, u => window.dispatchEvent(new CustomEvent("fb-auth", {
     </div>
   </section>
   <section class="charts-grid" id="chartsIb" hidden>
+    <div class="chart-card wide">
+      <h3>Trailers to process by day</h3>
+      <div class="note">Live unloads and other trailers (drops) scheduled the day before.</div>
+      <div class="chart-holder"><canvas id="tprChart"></canvas></div>
+    </div>
     <div class="chart-card">
       <h3>Trailers unloaded by day</h3>
       <div class="note rn"></div>
@@ -467,9 +485,19 @@ onAuthStateChanged(auth, u => window.dispatchEvent(new CustomEvent("fb-auth", {
       <div class="chart-holder"><canvas id="unitChart"></canvas></div>
     </div>
     <div class="chart-card wide">
+      <h3>Cartons picked by day</h3>
+      <div class="note rn"></div>
+      <div class="chart-holder"><canvas id="lcartChart"></canvas></div>
+    </div>
+    <div class="chart-card wide">
       <h3>Reaches per picking hour by day</h3>
       <div class="note">Reaches picked divided by picking hours. The combined line weights each shift by its hours.</div>
       <div class="chart-holder"><canvas id="rphChart"></canvas></div>
+    </div>
+    <div class="chart-card wide">
+      <h3>Reaches per dept hour by day</h3>
+      <div class="note">Reaches picked divided by dept hours (picking + support).</div>
+      <div class="chart-holder"><canvas id="drphChart"></canvas></div>
     </div>
   </section>
   <section class="charts-grid" id="chartsOb" hidden>
@@ -497,6 +525,16 @@ onAuthStateChanged(auth, u => window.dispatchEvent(new CustomEvent("fb-auth", {
       <h3>Cartons label slapped</h3>
       <div class="note">Days in the last 30 with label slapping. This doesn't happen every day.</div>
       <div class="chart-holder"><canvas id="slapChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>No demand % by day</h3>
+      <div class="note">No demand divided by cartons sorted. Lower is better.</div>
+      <div class="chart-holder"><canvas id="ndpChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Recirc % by day</h3>
+      <div class="note">Recircs divided by cartons sorted. Lower is better.</div>
+      <div class="chart-holder"><canvas id="rcpChart"></canvas></div>
     </div>
   </section>
 
@@ -610,8 +648,47 @@ METRICS.ptw={name:"Pallets putaway", unit:"pallets", kind:"sum", keys:["ip1","ip
   formula:"IB 1st Pallets Putaway + IB 2nd Pallets Putaway", color:"#a78bfa"};
 METRICS.po={name:"Open PO issues", unit:"open", kind:"snapshot", keys:["po1","po2"], lowerBetter:true,
   formula:"Open at end of day: 2nd shift count, or 1st if 2nd is blank", color:"#e2231a"};
-const TABS = {sum:["ob","inv","reach"], ib:["trl","rcv","ptw","po"], ltfc:["reach","units","rph"], ob:["ob","cph","obu","inv","slap"]};
-const TAB_NAMES = {stor:"storage", users:"users", am:"WIP", ame:"WIP", sum:"recap", ib:"inbound", ltfc:"LTFC", ob:"outbound"};
+// Inbound: trailers to process on a day = the live appointments and drops the previous day scheduled for it.
+METRICS.tpr={name:"Trailers to process", unit:"trailers", kind:"sum", keys:["_lv","_ot"], parts:["Live unloads","Other trailers"],
+  formula:"Live unloads + other trailers (drops) scheduled the day before", color:"#e8a33d"};
+METRICS.cry={name:"Carryover to receive / put away", unit:"loads", kind:"snapshot", keys:["lf1","lf1"], single:true, lowerBetter:true,
+  formula:"IB 1st Loads to Rcv/Ptw on Floor at end of day", color:"#6f9be0"};
+// LTFC
+METRICS.lcart={name:"Cartons picked", unit:"cartons", kind:"sum", keys:["lc1","lc2"],
+  formula:"LTFC 1st Cartons Picked + LTFC 2nd Cartons Picked", color:"#e8a33d"};
+METRICS.dhrs={name:"Dept hours", unit:"hrs", kind:"sum", keys:["t1","t2"], dec:1,
+  formula:"Picking hours + support hours", color:"#a78bfa"};
+METRICS.luph={name:"Units per hour (dept hours)", unit:"per hr", kind:"rate", num:["u1","u2"], den:["t1","t2"],
+  numName:"units", formula:"Units picked \u00F7 dept hours (picking + support)", color:"#6f9be0", dec:1};
+METRICS.drph={name:"Reaches per hour (dept hours)", unit:"per hr", kind:"rate", num:["l1","l2"], den:["t1","t2"],
+  numName:"reaches", formula:"Reaches picked \u00F7 dept hours (picking + support)", color:"#2fbf71", dec:1};
+METRICS.upc={name:"Units per carton (UPC)", unit:"units", kind:"rate", num:["u1","u2"], den:["lc1","lc2"],
+  numName:"units", denName:"cartons", formula:"Units picked \u00F7 cartons picked", color:"#6f9be0", dec:1};
+METRICS.rpc={name:"Reaches per carton (RPC)", unit:"reaches", kind:"rate", num:["l1","l2"], den:["lc1","lc2"],
+  numName:"reaches", denName:"cartons", formula:"Reaches picked \u00F7 cartons picked", color:"#2fbf71", dec:2};
+// Outbound
+METRICS.fcc={name:"FC cartons picked", unit:"cartons", kind:"sum", keys:["fc1","fc2"],
+  formula:"OB 1st FC Cartons Picked + OB 2nd FC Cartons Picked", color:"#6f9be0"};
+METRICS.load={name:"Cartons loaded", unit:"cartons", kind:"sum", keys:["ld1","ld2"], optional:true,
+  formula:"OB 1st + OB 2nd Cartons Loaded (label slap)", color:"#e8a33d"};
+METRICS.nd={name:"No demand", unit:"cartons", kind:"sum", keys:["nd1","nd2"], lowerBetter:true,
+  formula:"OB 1st No Demand + OB 2nd No Demand", color:"#e2231a"};
+METRICS.ndp={name:"No demand %", unit:"% of sorted", kind:"rate", num:["nd1","nd2"], den:["o1","o2"], scale:100, lowerBetter:true,
+  numName:"no demand", denName:"sorted", formula:"No demand \u00F7 cartons sorted, both shifts", color:"#e2231a", dec:2};
+METRICS.rc={name:"Recircs", unit:"cartons", kind:"sum", keys:["rc1","rc2"], lowerBetter:true,
+  formula:"OB 1st Recircs + OB 2nd Recircs", color:"#a78bfa"};
+METRICS.rcp={name:"Recirc %", unit:"% of sorted", kind:"rate", num:["rc1","rc2"], den:["o1","o2"], scale:100, lowerBetter:true,
+  numName:"recircs", denName:"sorted", formula:"Recircs \u00F7 cartons sorted, both shifts", color:"#a78bfa", dec:1};
+const TABS = {sum:["ob","inv","reach"], ib:["tpr","cry","trl","rcv","ptw","po"], ltfc:["reach","units","lcart","rph","dhrs","drph","luph","upc","rpc"], ob:["ob","cph","fcc","obu","inv","slap","load","nd","ndp","rc","rcp"]};
+// Derived per-day values (kept in memory only, never saved): the previous working day's next-day schedule.
+function deriveData(){
+  const ds=sortedDates();
+  for(let i=0;i<ds.length;i++){
+    const r=DATA[ds[i]]; delete r._lv; delete r._ot;
+    for(let j=i-1;j>=0;j--){ const p=DATA[ds[j]]; if(p.ap1!=null||p.dr1!=null){ if(ds[j]>=prevWorkday(ds[i])){ if(p.ap1!=null) r._lv=p.ap1; if(p.dr1!=null) r._ot=p.dr1; } break; } }
+  }
+}
+const TAB_NAMES = {flash:"flash", stor:"storage", users:"users", am:"WIP", ame:"WIP", sum:"recap", ib:"inbound", ltfc:"LTFC", ob:"outbound"};
 let tab = "sum";
 
 const fmt = (n,dec=0) => n==null||!isFinite(n) ? "\u2014" : Number(n).toLocaleString("en-US",{minimumFractionDigits:dec,maximumFractionDigits:dec});
@@ -626,7 +703,7 @@ function shiftVal(rec,m,s){
   if(!rec) return null;
   if(m.kind!=="rate"){ const v=rec[m.keys[s]]; return v==null?null:v; }
   const r=rec[m.num[s]], h=rec[m.den[s]];
-  return (r!=null && h>0) ? r/h : null;
+  return (r!=null && h>0) ? r/h*(m.scale||1) : null;
 }
 function total(rec,m){
   if(!rec) return null;
@@ -636,7 +713,7 @@ function total(rec,m){
     if(a==null && b==null) return null;
     return (a||0)+(b||0);
   }
-  return rateOf(rec,m.num,m.den);
+  const v=rateOf(rec,m.num,m.den); return v==null?null:v*(m.scale||1);
 }
 function rateOf(rec,num,den){
   if(!rec) return null; let r=0,h=0;
@@ -676,14 +753,14 @@ function mTotal(m,days){
   if(m.kind==="snapshot"){ for(let i=days.length-1;i>=0;i--){ const v=total(DATA[days[i]],m); if(v!=null) return v; } return null; }
   if(m.kind==="sum"){ let t=null; for(const d of days){ const v=total(DATA[d],m); if(v!=null) t=(t||0)+v; } return t; }
   let r=0,h=0; for(const d of days){ const x=DATA[d]; if(!x) continue; for(let k=0;k<2;k++) if(x[m.num[k]]!=null&&x[m.den[k]]>0){ r+=x[m.num[k]]; h+=x[m.den[k]]; } }
-  return h>0?r/h:null;
+  return h>0?r/h*(m.scale||1):null;
 }
 function mShift(m,days,s){
   if(!days.length) return null;
   if(days.length===1) return shiftVal(DATA[days[0]],m,s);
   if(m.kind==="snapshot"){ for(let i=days.length-1;i>=0;i--){ const v=shiftVal(DATA[days[i]],m,s); if(v!=null) return v; } return null; }
   if(m.kind==="sum"){ let t=null; for(const d of days){ const v=shiftVal(DATA[d],m,s); if(v!=null) t=(t||0)+v; } return t; }
-  const nd=mND(m,days,s); return nd?nd[0]/nd[1]:null;
+  const nd=mND(m,days,s); return nd?nd[0]/nd[1]*(m.scale||1):null;
 }
 function mND(m,days,s){ let r=0,h=0,any=false; for(const d of days){ const x=DATA[d]; if(x&&x[m.num[s]]!=null&&x[m.den[s]]>0){ r+=x[m.num[s]]; h+=x[m.den[s]]; any=true; } } return any?[r,h]:null; }
 const daysWith=(m,days)=>days.filter(d=>total(DATA[d],m)!=null).length;
@@ -745,6 +822,8 @@ function delta(cur,ref,m){
     const d=cur-ref; if(Math.abs(d)<0.05) return "<b>no change</b>";
     return `<b class="${good(d)?"up":"down"}">${d>0?"\u25B2":"\u25BC"} ${fmt(Math.abs(d),Math.abs(d)%1?1:0)}</b>`;
   }
+  if(m && m.scale){ const d=cur-ref; if(Math.abs(d)<0.005) return "<b>no change</b>";
+    return `<b class="${good(d)?"up":"down"}">${d>0?"\u25B2":"\u25BC"} ${fmt(Math.abs(d),2)} pts</b>`; }
   if(ref===0) return "\u2014";
   const p=(cur-ref)/ref*100;
   return `<b class="${good(p)?"up":"down"}">${p>=0?"\u25B2":"\u25BC"} ${Math.abs(p).toFixed(1)}%</b>`;
@@ -759,7 +838,8 @@ function card(key,compact){
     const k=m.kind==="rate"?m.num[s-1]:m.keys[s-1];
     if(v==null && ABSENT.includes(k)) return `<div class="shift"><div class="s-label"><i style="background:${col}"></i>${lbl}</div>
      <div class="s-val missing">Not tracked</div></div>`;
-    if(m.kind==="rate"){ const nd=mND(m,days,s-1); if(nd) sub=`<div class="s-label" style="margin-top:3px">${fmt(nd[0])} ${m.numName} / ${fmt(nd[1],nd[1]%1?1:0)} hrs</div>`; }
+    if(m.kind==="rate"){ const nd=mND(m,days,s-1); if(nd) sub=`<div class="s-label" style="margin-top:3px">${fmt(nd[0])} ${m.numName} / ${fmt(nd[1],nd[1]%1?1:0)} ${m.denName||"hrs"}</div>`; }
+    if(m.parts) lbl=m.parts[s-1];
     return `<div class="shift"><div class="s-label"><i style="background:${col}"></i>${lbl}</div>
      <div class="s-val${v==null?" missing":""}">${v==null?"Not entered":fmt(v,dec)}</div>${sub}</div>`;
   };
@@ -772,7 +852,7 @@ function card(key,compact){
     <div class="formula">${m.formula}</div>
     <div class="value">${t==null?"\u2014":fmt(t,dec)}<span class="unit">${m.unit}</span></div>
     ${extra}
-    ${compact?"":`<div class="shifts">${shiftBox("1st shift",C1,a,1)}${shiftBox("2nd shift",C2,b,2)}</div>`}
+    ${compact||m.single?"":`<div class="shifts">${shiftBox("1st shift",C1,a,1)}${shiftBox("2nd shift",C2,b,2)}</div>`}
     <div class="compare">${multi?rangeCompare(m,days,t):`
       <span>vs ${prev?shortDate(prev):"prior day"} (${fmt(prevT,dec)}): ${t==null?"\u2014":delta(t,prevT,m)}</span>
       <span>vs 30-day avg (${fmt(av,m.kind==="snapshot"?1:dec)}): ${t==null?"\u2014":delta(t,av,m)}</span>`}
@@ -985,6 +1065,7 @@ function renderDay(){
   document.getElementById("dataMeta").textContent = last ? `Scorecard data through ${shortDate(last)}, ${last.slice(0,4)}` : "";
   const box=document.getElementById("dayContent");
   if(tab==="users"){ renderUsers(box); return; }
+  if(tab==="flash"){ const w=flashWeek(current); document.getElementById("dayTitle").textContent="Flash: "+shortDate(w.start)+" \u2013 "+shortDate(w.end)+", "+w.end.slice(0,4); renderFlash(box); return; }
   if(tab==="stor"){ document.getElementById("dataMeta").textContent=""; renderStorage(box); return; }
   if(tab==="alloc"){ document.getElementById("dataMeta").textContent=""; renderAllocTab(box); return; }
   if(tab==="am") document.getElementById("dataMeta").textContent="";
@@ -1037,8 +1118,8 @@ function renderChart(id,key){
       nolegend:true};
   }else if(m.kind==="sum"){
     cfg={type:"bar",data:{labels:days.map(b=>b.label),datasets:[
-      {label:"1st shift",data:days.map(b=>mShift(m,b.days,0)??0),backgroundColor:days.map(b=>sel(b)?C1:C1+"99"),stack:"s",borderRadius:2},
-      {label:"2nd shift",data:days.map(b=>mShift(m,b.days,1)??0),backgroundColor:days.map(b=>sel(b)?C2:C2+"99"),stack:"s",borderRadius:2}]},
+      {label:m.parts?m.parts[0]:"1st shift",data:days.map(b=>mShift(m,b.days,0)??0),backgroundColor:days.map(b=>sel(b)?C1:C1+"99"),stack:"s",borderRadius:2},
+      {label:m.parts?m.parts[1]:"2nd shift",data:days.map(b=>mShift(m,b.days,1)??0),backgroundColor:days.map(b=>sel(b)?C2:C2+"99"),stack:"s",borderRadius:2}]},
       footer:items=>"Total: "+fmt(items.reduce((s,i)=>s+i.parsed.y,0))};
   }else{
     const line=(label,color,fn,w,order)=>({label,data:days.map(fn),borderColor:color,backgroundColor:color,borderWidth:w,spanGaps:true,tension:.25,order,
@@ -1063,7 +1144,7 @@ function renderChart(id,key){
       },
       scales:{
         x:{stacked:m.kind==="sum",ticks:{color:col.text,font:{size:10},maxRotation:0,autoSkip:true},grid:{display:false}},
-        y:{stacked:m.kind==="sum",beginAtZero:true,ticks:{color:col.text,font:{size:10},precision:0,callback:v=>v>=1000?(v/1000)+"k":v},grid:{color:col.grid}}
+        y:{stacked:m.kind==="sum",beginAtZero:true,ticks:{color:col.text,font:{size:10},precision:m.dec?undefined:0,callback:v=>v>=1000?(v/1000)+"k":v},grid:{color:col.grid}}
       }
     }
   });
@@ -1104,6 +1185,7 @@ function renderSumChart(id){
 }
 
 function render(){
+  deriveData();
   renderDay();
   syncRangeUI();
   document.querySelectorAll(".chart-card .note.rn").forEach(n=>n.textContent=chartNote());
@@ -1112,15 +1194,245 @@ function render(){
   document.getElementById("chartsLtfc").hidden = tab!=="ltfc";
   document.getElementById("chartsOb").hidden = tab!=="ob";
   if(window.Chart){
-    if(tab==="ib"){ renderChart("trlChart","trl"); renderPairChart("pairChart"); renderChart("poChart","po"); }
-    else if(tab==="ltfc"){ renderChart("reachChart","reach"); renderChart("unitChart","units"); renderChart("rphChart","rph"); }
-    else if(tab==="ob"){ renderChart("obChart","ob"); renderChart("obuChart","obu"); renderChart("invChart","inv"); renderChart("cphChart","cph"); renderChart("slapChart","slap"); }
+    if(tab==="ib"){ renderChart("tprChart","tpr"); renderChart("trlChart","trl"); renderPairChart("pairChart"); renderChart("poChart","po"); }
+    else if(tab==="ltfc"){ renderChart("reachChart","reach"); renderChart("unitChart","units"); renderChart("lcartChart","lcart"); renderChart("rphChart","rph"); renderChart("drphChart","drph"); }
+    else if(tab==="ob"){ renderChart("obChart","ob"); renderChart("obuChart","obu"); renderChart("invChart","inv"); renderChart("cphChart","cph"); renderChart("slapChart","slap"); renderChart("ndpChart","ndp"); renderChart("rcpChart","rcp"); }
   }
   document.getElementById("foot").textContent=(SOURCE&&!["users","am","stor","alloc"].includes(tab))?"Source: "+SOURCE+". Blank cells count as not entered, not zero.":"";
 }
 
+// ---- Flash: weekly (Sunday–Saturday) high-level summary for the customer, with an Excel export ----
+const UPH_GOAL_DEFAULT=605;
+// Hours-to-complete rates from the old flash: reaches per hour, and working hours per day.
+const FLASH_RATES={fc:2400, ltc:1440, dz:2400, obDay:16, ltcDay:8};
+const uphGoal=()=>num(SETTINGS.uphGoal)>0?num(SETTINGS.uphGoal):UPH_GOAL_DEFAULT;
+function flashWeek(d){ const x=parseIso(d); x.setDate(x.getDate()-x.getDay()); const s=iso(x); return {start:s, end:addDays(s,6)}; }
+const fadd=(...xs)=>xs.some(x=>x!=null)?xs.reduce((t,x)=>t+(x||0),0):null;
+const fdiv=(a,b,k)=>(a!=null&&b>0)?a/b*(k||1):null;
+const weLabel=s=>{ const x=parseIso(s); return (x.getMonth()+1)+"."+String(x.getDate()).padStart(2,"0")+"."+String(x.getFullYear()).slice(2); };
+// The WIP snapshot: the first start-of-shift entry after the week ends, else the latest one in the week.
+function flashSnapDay(w){
+  const has=k=>MORNING[k]&&(MORNING[k].unwaved||MORNING[k].form);
+  const ks=Object.keys(MORNING).sort();
+  return ks.find(k=>k>w.end&&k<=addDays(w.end,7)&&has(k)) || ks.filter(k=>k>=w.start&&k<=w.end&&has(k)).pop() || null;
+}
+function flashModel(d){
+  const w=flashWeek(d), all=[]; for(let i=0;i<7;i++) all.push(addDays(w.start,i));
+  const T=(day,k)=>total(DATA[day],METRICS[k]);
+  const hasAny=day=>{ const r=DATA[day]; return r&&Object.keys(r).some(k=>k[0]!=="_"&&!EOS_KEYS.includes(k)); };
+  const days=all.filter(x=>{ const wd=parseIso(x).getDay(); return (wd>0&&wd<6)||hasAny(x); });
+  const dayName=x=>parseIso(x).toLocaleDateString("en-US",{weekday:"short",month:"numeric",day:"numeric"});
+  const sum=(rows,i)=>fadd(...rows.map(r=>r[i]));
+  const last=(rows,i)=>{ for(let j=rows.length-1;j>=0;j--) if(rows[j][i]!=null) return rows[j][i]; return null; };
+  const S=[];
+  // Inbound
+  const ib=days.map(x=>[dayName(x), DATA[x]&&DATA[x]._lv, DATA[x]&&DATA[x]._ot, T(x,"tpr"), T(x,"cry"), T(x,"trl"), T(x,"rcv"), T(x,"ptw"), T(x,"po")]);
+  const snap=flashSnapDay(w), SF=(snap&&MORNING[snap].form)||{};
+  S.push({key:"ib", title:"Inbound", color:DEPT.ib,
+    cols:[["Day","text"],["Live unloads scheduled","int"],["Other trailers","int"],["Total trailers to process","int"],["Carryover rec / ptw","int"],["Trailers unloaded","int"],["Pallets received","int"],["Pallets putaway","int"],["Open PO issues","int"]],
+    rows:ib, total:["Total",sum(ib,1),sum(ib,2),sum(ib,3),last(ib,4),sum(ib,5),sum(ib,6),sum(ib,7),last(ib,8)],
+    note:"Live unloads and other trailers are the appointments and drops scheduled the day before. Carryover and open PO issues in the total row are the last day of the week."+(SF.oldestPO?" Oldest open PO: "+parseIso(String(SF.oldestPO)).toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"numeric"})+" (WIP Entry "+shortDate(snap)+").":"")});
+  // WIP snapshot
+  if(snap||eosDay(addDays(w.end,1))){
+    const sd=snap||addDays(w.end,1), a=autoView(sd)||{}, uw=(MORNING[sd]&&MORNING[sd].unwaved)||{};
+    const R=FLASH_RATES;
+    const row=(name,wr,ur,wu,uu,rate,perDay)=>{ const tr=fadd(wr,ur), tu=fadd(wu,uu), h=fdiv(tr,rate); return [name,wr,ur,tr,wu,uu,tu,h,fdiv(h,perDay)]; };
+    const rows=[row("Outbound FC",a.obWaved,uw.obReaches,a.obWavedUnits,uw.obUnits,R.fc,R.obDay),
+      row("LTC",a.ltcCarry,uw.ltcReaches,a.ltcCarryUnits,uw.ltcUnits,R.ltc,R.ltcDay),
+      row("DZ to sort",fadd(a.obDz,a.obStat),null,a.obDzUnits,null,R.dz,R.obDay)];
+    S.push({key:"wip", title:"WIP", color:"#e8a33d",
+      cols:[["","text"],["Waved reaches","int"],["Unwaved reaches","int"],["Total reaches","int"],["Waved units","int"],["Unwaved units","int"],["Total units","int"],["Hours to complete","d1"],["Days to complete","d2"]],
+      rows, note:`As of start of shift ${longDate(sd)}: waved is end of day ${a.src?shortDate(a.src):"(no scorecard day)"} from the scorecard, unwaved is from that morning's unwaved report. DZ to sort includes Stat 30. Hours to complete at ${fmt(R.fc)} FC, ${fmt(R.ltc)} LTC and ${fmt(R.dz)} DZ reaches per hour; days at ${R.obDay} outbound and ${R.ltcDay} LTC hours a day.`});
+  }
+  // Outbound
+  const ob=days.map(x=>{ const fcC=T(x,"fcc"), fcU=T(x,"obu"), lC=T(x,"lcart"), lR=T(x,"reach"), lU=T(x,"units");
+    return [dayName(x),T(x,"ob"),fcC,fcU,lC,lR,lU,fadd(fcC,lC),fadd(fcU,lU),T(x,"slap"),T(x,"load"),T(x,"inv")]; });
+  S.push({key:"ob", title:"Outbound", color:DEPT.ob,
+    cols:[["Day","text"],["Cartons sorted","int"],["FC cartons","int"],["FC units","int"],["LTFC cartons","int"],["LTFC reaches","int"],["LTFC units","int"],["Total cartons","int"],["Total units","int"],["Label slapped","int"],["Label slap loaded","int"],["Cartons invoiced","int"]],
+    rows:ob, total:["Total",...[1,2,3,4,5,6,7,8,9,10,11].map(i=>sum(ob,i))],
+    note:"Both shifts combined. Total cartons = FC cartons + LTFC cartons; total units = FC units + LTFC units."});
+  // LTC metrics
+  const lt=days.map(x=>{ const r=DATA[x]||{}, ph=fadd(r.h1,r.h2), dh=T(x,"dhrs"), u=T(x,"units"), re=T(x,"reach"), c=T(x,"lcart");
+    return [dayName(x),ph,dh,u,re,c,fdiv(u,c),fdiv(u,dh),fdiv(re,ph),fdiv(re,dh),fdiv(re,c)]; });
+  const tPH=sum(lt,1), tDH=sum(lt,2), tU=sum(lt,3), tR=sum(lt,4), tC=sum(lt,5);
+  S.push({key:"ltc", title:"LTC metrics", color:DEPT.ltc,
+    cols:[["Day","text"],["Picking hrs","d1"],["Dept hrs","d1"],["Units","int"],["Reaches","int"],["Cartons","int"],["UPC","d1"],["UPH (dept hrs)","d1"],["Picking RPH","d1"],["Dept RPH","d1"],["RPC","d2"]],
+    rows:lt, total:["Week",tPH,tDH,tU,tR,tC,fdiv(tU,tC),fdiv(tU,tDH),fdiv(tR,tPH),fdiv(tR,tDH),fdiv(tR,tC)],
+    note:"Both shifts combined. Dept hours = picking + support hours. Week rates are week totals divided by week hours or cartons."});
+  // Sorter recap
+  const so=days.map(x=>{ const s=T(x,"ob"), n=T(x,"nd"), r=T(x,"rc"); return [dayName(x),s,n,fdiv(n,s,100),r,fdiv(r,s,100)]; });
+  const sS=sum(so,1), sN=sum(so,2), sR=sum(so,4);
+  S.push({key:"sort", title:"Weekly sorter recap", color:"#a78bfa",
+    cols:[["Day","text"],["Cartons sorted","int"],["No demand","int"],["No demand %","pct"],["Recircs","int"],["Recirc %","pct"]],
+    rows:so, total:["Week",sS,sN,fdiv(sN,sS,100),sR,fdiv(sR,sS,100)], note:"1st + 2nd shift added together as a true daily total."});
+  // UPH
+  const g=uphGoal();
+  const up=days.map(x=>{ const h=hoursFor(x), u=ob[days.indexOf(x)][8], c=ob[days.indexOf(x)][7]; return [dayName(x),h,u,c,fdiv(u,h),fdiv(c,h)]; });
+  const withH=up.filter(r=>r[1]>0), uH=sum(withH,1), uU=sum(withH,2), uC=sum(withH,3);
+  S.push({key:"uph", title:"UPH", color:"#2fbf71",
+    cols:[["Day","text"],["Hours worked","d1"],["Total units","int"],["Total cartons","int"],["UPH","d1"],["CPH","d1"]],
+    rows:up, total:["Week",uH,uU,uC,fdiv(uU,uH),fdiv(uC,uH)],
+    note:`Goal: ${fmt(g)} UPH. Hours worked are typed on WIP Entry the next morning. The week row only counts days with hours entered.`});
+  // Headline numbers
+  const kpis=[["Cartons sorted",sum(ob,1),"int"],["Total units picked",sum(ob,8),"int"],["Total cartons picked",sum(ob,7),"int"],
+    ["LTFC reaches picked",sum(ob,5),"int"],["Cartons invoiced",sum(ob,11),"int"],["Trailers unloaded",sum(ib,5),"int"],["Pallets putaway",sum(ib,7),"int"],["UPH",fdiv(uU,uH),"d1"]];
+  return {week:w, days, sections:S, kpis, goal:g, uph:up, snap};
+}
+const ffmt=(v,t)=>v==null||!isFinite(v)?"—":t==="int"?fmt(v):t==="d1"?fmt(v,1):t==="d2"?fmt(v,2):t==="pct"?fmt(v,2)+"%":esc(String(v));
+function renderFlash(box){
+  const M=flashModel(current), w=M.week, D="—";
+  const anyData=M.days.some(x=>DATA[x]);
+  let html=`<div class="fl-bar"><div class="fl-week">Week ending <b>${esc(parseIso(w.end).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"}))}</b></div>
+    <div class="fl-actions"><button type="button" class="btn" id="flPrev">&lsaquo; Previous week</button><button type="button" class="btn" id="flNext">Next week &rsaquo;</button>
+    <button type="button" class="btn primary" id="flExport"${anyData?"":" disabled"}>Export to Excel</button></div></div>`;
+  if(!anyData){
+    box.innerHTML=html+`<div class="empty"><h3>No scorecard numbers for this week</h3><p>${latestDate()&&w.start>latestDate()?"The loaded scorecard ends on "+shortDate(latestDate())+". Load an updated scorecard on WIP Entry.":"Pick another week."}</p></div>`;
+    wireFlash(M); return;
+  }
+  const uph=M.kpis[7][1], g=M.goal;
+  html+=deptHead("#e8a33d","Week at a glance")+deptGrid(M.kpis.map(([l,v,t],i)=>kpiCard(i===7?"#2fbf71":["#6f9be0","#6f9be0","#6f9be0","#2fbf71","#e2231a","#a78bfa","#a78bfa"][i],l,ffmt(v,t),i===7?"units per hour":"",
+    i===7?(uph==null?"No hours entered this week":`Goal <b>${fmt(g)}</b> &middot; <b class="${uph>=g?"up":"down"}">${Math.round(uph/g*100)}% of goal</b>`):"")),4);
+  for(const s of M.sections){
+    html+=deptHead(s.color,s.title);
+    if(s.key==="uph") html+=`<div class="kpi fl-chart" style="--kpi-accent:${s.color}"><div class="label">UPH by day</div>
+      <div class="chart-holder" style="height:260px"><canvas id="flUph"></canvas></div>
+      <div class="pp-set" id="goalSet" style="margin:8px 0 0">UPH goal: <b>${fmt(g)}</b>${myRole==="admin"?` <button type="button" class="btn" id="goalEdit">Change</button>`:""}</div></div>`;
+    const num_=t=>t!=="text";
+    html+=`<div class="kpi fl-card" style="--kpi-accent:${s.color}"><div class="fl-wrap"><table class="sched-t fl-t">
+      <thead><tr>${s.cols.map(([h,t])=>`<th${num_(t)?' class="n"':""}>${esc(h)}</th>`).join("")}</tr></thead>
+      <tbody>${s.rows.map(r=>`<tr>${r.map((v,i)=>`<td${num_(s.cols[i][1])?' class="n"':""}>${i===0?`<b>${esc(v)}</b>`:ffmt(v,s.cols[i][1])}</td>`).join("")}</tr>`).join("")}</tbody>
+      ${s.total?`<tfoot><tr>${s.total.map((v,i)=>`<td${num_(s.cols[i][1])?' class="n"':""}>${i===0?esc(v):ffmt(v,s.cols[i][1])}</td>`).join("")}</tr></tfoot>`:""}
+      </table></div><p class="modal-note fl-note">${esc(s.note)}</p></div>`;
+  }
+  box.innerHTML=html;
+  wireFlash(M);
+  if(window.Chart){
+    const col=chartColors(), lab=M.uph.map(r=>r[0]), vals=M.uph.map(r=>r[4]);
+    if(charts.flUph) charts.flUph.destroy();
+    charts.flUph=new Chart(document.getElementById("flUph"),{type:"bar",
+      data:{labels:lab,datasets:[
+        {type:"line",label:`Goal (${fmt(g)})`,data:lab.map(()=>g),borderColor:"#e2231a",backgroundColor:"#e2231a",borderWidth:2,borderDash:[6,5],pointRadius:0,order:1},
+        {label:"UPH",data:vals,backgroundColor:vals.map(v=>v>=g?"#2fbf71":"#6f9be0"),borderRadius:3,order:2}]},
+      options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:"index",intersect:false},
+        plugins:{legend:{labels:{color:col.text,boxWidth:10,font:{size:11}}},
+          tooltip:{callbacks:{label:i=>i.dataset.label+": "+fmt(i.parsed.y,1),
+            afterBody:items=>{ const r=M.uph[items[0].dataIndex]; return r[1]>0?[`Hours: ${fmt(r[1],1)}`,`Units: ${fmt(r[2])}`,`CPH: ${fmt(r[5],1)}`]:["No hours entered"]; }}}},
+        scales:{x:{ticks:{color:col.text,font:{size:11}},grid:{display:false}},
+          y:{beginAtZero:true,suggestedMax:g*1.15,ticks:{color:col.text,font:{size:10}},grid:{color:col.grid}}}}});
+  }
+}
+function wireFlash(M){
+  document.getElementById("flPrev").onclick=()=>{ current=addDays(M.week.start,-1); render(); };
+  document.getElementById("flNext").onclick=()=>{ current=addDays(M.week.end,1); render(); };
+  document.getElementById("flExport").onclick=()=>flashExport(M).catch(e=>toast("Couldn't build the Excel file. "+(e&&e.message||e),12000));
+  const ge=document.getElementById("goalEdit");
+  if(ge) ge.onclick=()=>{
+    const wrap=document.getElementById("goalSet");
+    wrap.innerHTML=`UPH goal: <input class="am-in" type="number" id="goalVal" min="1" step="1" value="${uphGoal()}" aria-label="UPH goal">
+      <button type="button" class="btn primary" id="goalSave">Save</button><button type="button" class="btn" id="goalCancel">Cancel</button>`;
+    document.getElementById("goalVal").focus();
+    document.getElementById("goalCancel").onclick=()=>render();
+    document.getElementById("goalSave").onclick=()=>{
+      const v=num(document.getElementById("goalVal").value);
+      if(!(v>0)) return toast("Enter a number above zero.");
+      FB.write("settings/uphGoal",v).then(()=>toast("UPH goal set to "+fmt(v)+".")).catch(fbErr);
+    };
+  };
+}
+// The UPH chart for the Excel file: fixed size, white background, each day's UPH written on its bar.
+function uphPng(M){
+  const W=1500, H=480, cv=document.createElement("canvas"); cv.width=W; cv.height=H;
+  const g=M.goal, lab=M.uph.map(r=>r[0]), vals=M.uph.map(r=>r[4]==null?null:Math.round(r[4]*10)/10);
+  const ink="#1f2a5c", font={family:"Calibri, Arial, sans-serif"};
+  const ch=new Chart(cv,{type:"bar",
+    data:{labels:lab,datasets:[
+      {type:"line",label:`Goal (${fmt(g)})`,data:lab.map(()=>g),borderColor:"#e2231a",backgroundColor:"#e2231a",borderWidth:3,borderDash:[10,8],pointRadius:0,order:1},
+      {label:"UPH",data:vals,backgroundColor:vals.map(v=>v>=g?"#2fbf71":"#2b4c9b"),borderRadius:4,order:2}]},
+    options:{responsive:false,animation:false,devicePixelRatio:1,layout:{padding:{top:10,right:20,left:10,bottom:4}},
+      plugins:{legend:{labels:{color:ink,font:{...font,size:20},boxWidth:22}},tooltip:{enabled:false}},
+      scales:{x:{ticks:{color:ink,font:{...font,size:20}},grid:{display:false}},
+        y:{beginAtZero:true,suggestedMax:g*1.2,ticks:{color:ink,font:{...font,size:18}},grid:{color:"#dde3f0"}}}},
+    plugins:[{id:"whiteBg",beforeDraw:c=>{ const x=c.ctx; x.save(); x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height); x.restore(); }},
+      {id:"barLabels",afterDatasetsDraw:c=>{ const x=c.ctx, meta=c.getDatasetMeta(1); x.save(); x.fillStyle="#fff"; x.font="bold 22px Calibri, Arial, sans-serif"; x.textAlign="center"; x.textBaseline="top";
+        meta.data.forEach((b,i)=>{ if(vals[i]!=null) x.fillText(fmt(vals[i],1),b.x,b.y+10); }); x.restore(); }}]});
+  const url=cv.toDataURL("image/png"); ch.destroy(); return url;
+}
+let excelJsLoad=null;
+function loadExcelJs(){
+  if(window.ExcelJS) return Promise.resolve();
+  return excelJsLoad=excelJsLoad||new Promise((ok,bad)=>{ const s=document.createElement("script");
+    s.src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"; s.onload=ok; s.onerror=()=>{ excelJsLoad=null; bad(new Error("The Excel tool didn't load. Check your connection and try again.")); }; document.head.appendChild(s); });
+}
+async function flashExport(M){
+  const btn=document.getElementById("flExport"); btn.disabled=true; btn.textContent="Building…";
+  try{
+    await loadExcelJs();
+    const wb=new ExcelJS.Workbook(); wb.creator=(fbUser&&fbUser.name)||"Daily Output";
+    const ws=wb.addWorksheet("Flash WE "+weLabel(M.week.end),{views:[{showGridLines:false}],
+      pageSetup:{orientation:"landscape",fitToPage:true,fitToWidth:1,fitToHeight:0,margins:{left:.4,right:.4,top:.5,bottom:.5,header:.3,footer:.3}}});
+    const NAVY="FF1F2A5C", BLUE="FF2B4C9B", LIGHT="FFEEF2FB", LINE="FFC9D3EA", W=12;
+    ws.columns=[{width:16},...Array.from({length:W-1},()=>({width:14}))];
+    const NF={int:"#,##0", d1:"#,##0.0", d2:"0.00", pct:"0.00%"};
+    let r=1;
+    ws.mergeCells(r,1,r,W); Object.assign(ws.getCell(r,1),{value:"CEVA Daily Report – Bath & Body Works Flash"});
+    ws.getCell(r,1).font={bold:true,size:16,color:{argb:"FFFFFFFF"}}; ws.getCell(r,1).fill={type:"pattern",pattern:"solid",fgColor:{argb:NAVY}};
+    ws.getRow(r).height=26; ws.getCell(r,1).alignment={vertical:"middle",indent:1}; r++;
+    ws.mergeCells(r,1,r,W);
+    ws.getCell(r,1).value=`Week ending ${parseIso(M.week.end).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})}  (${shortDate(M.week.start)} – ${shortDate(M.week.end)})`;
+    ws.getCell(r,1).font={bold:true,size:11,color:{argb:BLUE}}; r+=2;
+    const secTitle=t=>{ ws.mergeCells(r,1,r,W); const c=ws.getCell(r,1); c.value=t; c.font={bold:true,size:12,color:{argb:NAVY}};
+      c.border={bottom:{style:"medium",color:{argb:BLUE}}}; ws.getRow(r).height=20; r++; };
+    // Headline numbers: label row + value row, 4 per line
+    secTitle("Week at a glance");
+    for(let i=0;i<M.kpis.length;i+=4){
+      M.kpis.slice(i,i+4).forEach(([l,v,t],j)=>{
+        const c0=1+j*3; ws.mergeCells(r,c0,r,c0+2); ws.mergeCells(r+1,c0,r+1,c0+2);
+        const a=ws.getCell(r,c0), b=ws.getCell(r+1,c0);
+        a.value=l; a.font={size:9,bold:true,color:{argb:"FF5B6B8C"}}; a.fill={type:"pattern",pattern:"solid",fgColor:{argb:LIGHT}};
+        b.value=v==null?null:v; b.numFmt=NF[t]; b.font={bold:true,size:14,color:{argb:NAVY}}; b.fill={type:"pattern",pattern:"solid",fgColor:{argb:LIGHT}};
+        b.alignment=a.alignment={horizontal:"left",indent:1};
+      });
+      r+=3;
+    }
+    for(const s of M.sections){
+      secTitle(s.title);
+      if(s.key==="uph"&&window.Chart){
+        const img=wb.addImage({base64:uphPng(M),extension:"png"});
+        ws.addImage(img,{tl:{col:0.1,row:r+0.3},ext:{width:800,height:256}});
+        for(let k=0;k<16;k++) ws.getRow(r+k).height=15; r+=16;
+      }
+      const hr=ws.getRow(r); hr.height=30;
+      s.cols.forEach(([h,t],i)=>{ const c=hr.getCell(i+1); c.value=h; c.font={bold:true,size:10,color:{argb:"FFFFFFFF"}};
+        c.fill={type:"pattern",pattern:"solid",fgColor:{argb:BLUE}}; c.alignment={wrapText:true,vertical:"middle",horizontal:t==="text"?"left":"center"};
+        c.border={top:{style:"thin",color:{argb:BLUE}},bottom:{style:"thin",color:{argb:BLUE}}}; });
+      r++;
+      const put=(vals,isTot,zebra)=>{ const row=ws.getRow(r);
+        vals.forEach((v,i)=>{ const c=row.getCell(i+1), t=s.cols[i][1];
+          c.value=(v==null||(typeof v==="number"&&!isFinite(v)))?null:(t==="pct"?v/100:v);
+          if(NF[t]) c.numFmt=NF[t];
+          c.font={size:10,bold:!!isTot||i===0,color:{argb:NAVY}};
+          c.alignment={horizontal:t==="text"?"left":"right"};
+          c.border=isTot?{top:{style:"thin",color:{argb:NAVY}},bottom:{style:"double",color:{argb:NAVY}}}:{bottom:{style:"hair",color:{argb:LINE}}};
+          if(isTot||zebra) c.fill={type:"pattern",pattern:"solid",fgColor:{argb:isTot?"FFDDE5F6":LIGHT}}; });
+        r++; };
+      s.rows.forEach((v,i)=>put(v,false,i%2===1));
+      if(s.total) put(s.total,true);
+      ws.mergeCells(r,1,r,W); const n=ws.getCell(r,1); n.value=s.note; n.font={italic:true,size:9,color:{argb:"FF6B7A99"}};
+      n.alignment={wrapText:true,vertical:"top"}; ws.getRow(r).height=s.note.length>150?28:16; r+=2;
+    }
+    ws.mergeCells(r,1,r,W);
+    ws.getCell(r,1).value="Source: BBW Scorecard"+(SOURCE?" ("+SOURCE+")":"")+", WIP Entry and the unwaved report. Exported "+new Date().toLocaleString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"})+".";
+    ws.getCell(r,1).font={size:8,color:{argb:"FF8A96B0"}};
+    const buf=await wb.xlsx.writeBuffer();
+    const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
+    a.download="CEVA Flash report WE "+weLabel(M.week.end)+".xlsx"; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    toast("Saved "+a.download+" to your downloads.");
+  } finally { btn.disabled=false; btn.textContent="Export to Excel"; }
+}
+
 // Tabs a person can see (set per person on the Users tab). null = every tab. Admins always see every tab.
-const TAB_LIST=[["sum","Previous Day Recap"],["am","Current WIP"],["alloc","Allocation"],["stor","Storage Capacity & Utilization"],["ib","Inbound"],["ltfc","LTFC"],["ob","Outbound"],["ame","WIP Entry"]];
+const TAB_LIST=[["sum","Previous Day Recap"],["am","Current WIP"],["alloc","Allocation"],["stor","Storage Capacity & Utilization"],["ib","Inbound"],["ltfc","LTFC"],["ob","Outbound"],["flash","Flash"],["ame","WIP Entry"]];
 const BBW_VIEW={sum:true,am:true,stor:true};
 let myTabs=null;
 function tabAllowed(t){ return t==="users"?myRole==="admin":(myRole==="admin"||!myTabs||!!myTabs[t]); }
@@ -1131,6 +1443,7 @@ function applyTabs(){
 }
 function goTab(t){
   if(t==="sum"&&tab!=="sum"){ rangeKey="prev"; current=recapDay(); }
+  else if(t==="flash"&&tab!=="flash") current=recapDay();
   else if(["am","ame","stor","alloc"].includes(t)&&!["am","ame","stor","alloc"].includes(tab)) current=iso(new Date());
   setTab(t);
 }
@@ -1141,8 +1454,8 @@ function setTab(t){
 }
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{ if(tabAllowed(b.dataset.tab)) goTab(b.dataset.tab); });
 pick.addEventListener("change",()=>{ if(pick.value){ current=pick.value; rangeKey="day"; render(); } });
-document.getElementById("prevDay").onclick=()=>{ current=addDays(current,-1); rangeKey="day"; render(); };
-document.getElementById("nextDay").onclick=()=>{ current=addDays(current,1); rangeKey="day"; render(); };
+document.getElementById("prevDay").onclick=()=>{ current=addDays(current,tab==="flash"?-7:-1); rangeKey="day"; render(); };
+document.getElementById("nextDay").onclick=()=>{ current=addDays(current,tab==="flash"?7:1); rangeKey="day"; render(); };
 document.getElementById("todayBtn").onclick=()=>{ current=iso(new Date()); rangeKey="day"; render(); };
 const rangeSel=document.getElementById("rangeSel"), rFromEl=document.getElementById("rFrom"), rToEl=document.getElementById("rTo");
 function setGran(g){ gran=g; document.querySelectorAll("#granSeg button").forEach(x=>x.classList.toggle("on",x.dataset.gran===g)); render(); }
@@ -1163,7 +1476,7 @@ function customChanged(){
 }
 rFromEl.addEventListener("change",customChanged); rToEl.addEventListener("change",customChanged);
 function syncRangeUI(){
-  const wipTab=["am","ame","users","stor","alloc"].includes(tab);
+  const wipTab=["am","ame","users","stor","alloc","flash"].includes(tab);
   document.getElementById("rangeBar").hidden=wipTab;
   document.getElementById("granSeg").hidden=tab==="sum";
   rangeSel.value=rangeKey;
@@ -1195,7 +1508,12 @@ const ROWS = {
   lf1:/^IB 1st Loads to Rcv\/Ptw on Floor$/i, pp1:/^IB 1st PP$/i,
   lwu1:/^LTFC 1st Units Waved @ EOS$/i, lwu2:/^LTFC 2nd Units Waved @ EOS$/i,
   owu1:/^OB 1st Units Waved @ EOS$/i,   owu2:/^OB 2nd Units Waved @ EOS$/i,
-  dzu1:/^OB 1st DZ Units to sort$/i,    dzu2:/^OB 2nd DZ Units to sort$/i
+  dzu1:/^OB 1st DZ Units to sort$/i,    dzu2:/^OB 2nd DZ Units to sort$/i,
+  lc1:/^LTFC 1st Cartons Picked$/i,     lc2:/^LTFC 2nd Cartons Picked$/i,
+  fc1:/^OB 1st FC Cartons Picked$/i,    fc2:/^OB 2nd FC Cartons Picked$/i,
+  ld1:/^OB 1st Cartons Loaded$/i,       ld2:/^OB 2nd Cartons Loaded$/i,
+  nd1:/^OB 1st No Demand$/i,            nd2:/^OB 2nd No Demand$/i,
+  rc1:/^OB 1st Recircs$/i,              rc2:/^OB 2nd Recircs$/i
 };
 // End-of-day WIP rows: future days hold formula 0s, so a 0 here never counts as a day with data.
 const EOS_KEYS = ["lw1","lw2","ow1","ow2","dz1","dz2","st1","st2","ap1","dr1","lf1","pp1","lwu1","lwu2","owu1","owu2","dzu1","dzu2"];
@@ -2032,7 +2350,7 @@ function startData(){
     if(tab==="ame"&&amDrafts[current]){ amStatus(); return; }
     if(tab==="am"||tab==="ame") render();
   }, fbErr));
-  fbOff.push(FB.listen("settings", v=>{ SETTINGS=v||{}; if(tab==="stor") render(); }, fbErr));
+  fbOff.push(FB.listen("settings", v=>{ SETTINGS=v||{}; if(tab==="stor"||tab==="flash") render(); }, fbErr));
   fbOff.push(FB.listen("morning", v=>{
     MORNING=v||{};
     if(tab==="ame"&&amDrafts[current]){ updateComputed(); amStatus(); return; } // never wipe what someone is typing
