@@ -181,10 +181,12 @@ body.dragging .dropzone{border-color:#2f6fd0;background:rgba(47,111,208,.14);col
 @media (max-width:1000px){.am-grid{grid-template-columns:1fr;}}
 .am-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:16px 20px 10px;}
 /* WIP Entry: cards flow into columns so short cards don't leave gaps */
-.am-grid.entry-grid{display:block;column-count:3;column-gap:18px;}
-@media (max-width:1280px){.am-grid.entry-grid{column-count:2;}}
-@media (max-width:800px){.am-grid.entry-grid{column-count:1;}}
-.entry-grid .am-card{break-inside:avoid;margin:0 0 18px;border-left:4px solid var(--acc,var(--card-border));padding:14px 18px 8px 18px;}
+/* WIP Entry: three fixed columns. Oldest allocation always sits on the right. */
+.am-grid.entry-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:start;}
+.entry-grid .ecol{display:flex;flex-direction:column;gap:18px;min-width:0;}
+@media (max-width:1100px){.am-grid.entry-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.entry-grid .ecol:last-child{grid-column:1 / -1;}}
+@media (max-width:760px){.am-grid.entry-grid{grid-template-columns:1fr;}}
+.entry-grid .am-card{margin:0;border-left:4px solid var(--acc,var(--card-border));padding:14px 18px 8px 18px;}
 .entry-grid .am-card h3{font-size:14.5px;margin-bottom:4px;}
 .entry-grid .am-row{padding:7px 0;}
 .entry-grid .am-in{width:110px;}
@@ -380,7 +382,6 @@ onAuthStateChanged(auth, u => window.dispatchEvent(new CustomEvent("fb-auth", {
       <div class="divider" aria-hidden="true"></div>
       <div>
         <h1>Daily Output</h1>
-        <div class="sub">Daily inbound, LTFC and outbound output from the BBW Scorecard</div>
       </div>
     </div>
     <div class="controls">
@@ -1464,6 +1465,7 @@ function renderMorning(box,entry){
     <b>Drag files here</b> or click to choose: the scorecard, the unwaved report and the outbound schedule, one at a time or all together.
     ${dropLog.length?`<ul>${dropLog.map(x=>`<li class="${x.ok?"ok":"bad"}">${x.ok?"&#10003;":"&#10007;"} ${esc(x.name)} &rarr; ${esc(x.what)}</li>`).join("")}</ul>`:""}</div>`}
   <div class="am-grid entry-grid">
+    <div class="ecol">
     <div class="am-card" style="--acc:#e8a33d"><h3>Previous day</h3>
       ${inRow("laborHours","Hours worked yesterday","Total for "+esc(longDate(prevWorkday(d)))+". Used for UPH on the Previous Day Recap")}
     </div>
@@ -1482,6 +1484,8 @@ function renderMorning(box,entry){
       ${inRow("vetRate","Veteran rate","Reaches per hour")}
       ${inRow("trnRate","Trainee rate","Reaches per hour")}
     </div>
+    </div>
+    <div class="ecol">
     <div class="am-card" style="--acc:#6f9be0"><h3>Outbound</h3>
       ${inRow("sorter1","Sorter capacity, 1st shift","Cartons")}
       ${inRow("sorter2","Sorter capacity, 2nd shift","Cartons")}
@@ -1494,13 +1498,16 @@ function renderMorning(box,entry){
       ${inRow("lsLoadsReady","Loads ready to load out")}
       ${inRow("lsConcerns","Load concerns","","text")}
     </div>
-    <div class="am-card" style="--acc:#e2231a"><h3>Oldest allocation</h3>
-      ${allocEditor()}
-    </div>
     <div class="am-card" style="--acc:#e8a33d"><h3>Scheduled loads</h3>
       <p class="modal-note" style="margin:0 0 4px">SB2 and BBWD come from the outbound schedule. Type BIA and other non-DA loads here.</p>
       ${inRow("bia","BIA","","text")}
       ${inRow("nonDa","Other non-DA loads","","text")}
+    </div>
+    </div>
+    <div class="ecol">
+    <div class="am-card" style="--acc:#e2231a"><h3>Oldest allocation</h3>
+      ${allocEditor()}
+    </div>
     </div>
   </div>`;
   box.querySelectorAll(".am-in[data-f]").forEach(el=>el.addEventListener("input",()=>{
