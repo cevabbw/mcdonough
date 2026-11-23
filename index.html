@@ -847,7 +847,32 @@ function renderRecap(box,days){
   if(mTotal(METRICS.slap,days)>0) ob.push(c(DEPT.ob,"slap"));
   box.innerHTML=deptHead(DEPT.ib,"Inbound")+deptGrid([c(DEPT.ib,"trl"),c(DEPT.ib,"rcv"),c(DEPT.ib,"ptw")],3)
     +deptHead(DEPT.ltc,"LTC")+deptGrid([c(DEPT.ltc,"reach"),c(DEPT.ltc,"units"),c(DEPT.ltc,"rph","Reaches per hour")],3)
-    +deptHead(DEPT.ob,"Outbound")+deptGrid(ob,ob.length);
+    +deptHead(DEPT.ob,"Outbound")+deptGrid(ob,ob.length)
+    +recapTotals(days,multi);
+}
+// Hours worked on day D are typed on WIP Entry the next working day (Monday's entry holds Friday's hours).
+function hoursFor(d){
+  for(const k of Object.keys(MORNING).sort()){
+    if(k<=d) continue;
+    if(prevWorkday(k)>d) break;
+    const h=num(MORNING[k]&&MORNING[k].form&&MORNING[k].form.laborHours); if(h>0) return h;
+  }
+  return null;
+}
+// Total units picked = LTC units picked + outbound units picked. UPH = total units / hours worked.
+function recapTotals(days,multi){
+  const T="#e8a33d", L=METRICS.units, O=METRICS.obu;
+  const units=d=>{ const a=total(DATA[d],L), b=total(DATA[d],O); return a==null&&b==null?null:(a||0)+(b||0); };
+  let all=null, uU=0, uH=0, nH=0;
+  for(const d of days){ const u=units(d); if(u!=null) all=(all||0)+u; const h=hoursFor(d); if(u!=null&&h>0){ uU+=u; uH+=h; nH++; } }
+  const lt=mTotal(L,days), ot=mTotal(O,days), D="\u2014";
+  const uph=uH>0?uU/uH:null;
+  const hoursNote=multi?(nH?`Hours entered for <b>${nH}</b> of ${days.length} day${days.length===1?"":"s"}`:"No hours entered in this range")
+    :(uH>0?"Typed on WIP Entry the next morning":"Enter it on WIP Entry under Hours worked yesterday");
+  return deptHead(T,"Total")+deptGrid([
+    kpiCard(T,"Total units picked",all==null?D:fmt(all),"units",`LTC <b>${lt==null?D:fmt(lt)}</b> &middot; Outbound <b>${ot==null?D:fmt(ot)}</b>`),
+    kpiCard(T,"Hours worked",uH>0?fmt(uH,uH%1?1:0):D,uH>0?"hrs":"",hoursNote),
+    kpiCard(T,"UPH",uph==null?D:fmt(uph,1),uph==null?"":"units per hour",uph==null?"Total units picked \u00f7 hours worked":(multi&&nH<days.length?"Only days with hours entered":"Total units picked \u00f7 hours worked"))],3);
 }
 
 function renderDay(){
@@ -1318,6 +1343,9 @@ function renderMorning(box,entry){
     <b>Drag files here</b> or click to choose: the scorecard, the unwaved report and the outbound schedule, one at a time or all together.
     ${dropLog.length?`<ul>${dropLog.map(x=>`<li class="${x.ok?"ok":"bad"}">${x.ok?"&#10003;":"&#10007;"} ${esc(x.name)} &rarr; ${esc(x.what)}</li>`).join("")}</ul>`:""}</div>`}
   <div class="am-grid">
+    <div class="am-card"><h3>Previous day</h3>
+      ${inRow("laborHours","Hours worked yesterday","Total for "+esc(longDate(prevWorkday(d)))+". Used for UPH on the Previous Day Recap")}
+    </div>
     <div class="am-card"><h3>Inbound</h3>
       ${inRow("ibLives","Lives","Scheduled appointments")}
       ${inRow("ibDrops","Drops")}
