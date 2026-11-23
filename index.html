@@ -1203,8 +1203,6 @@ function render(){
 
 // ---- Flash: weekly (Sunday–Saturday) high-level summary for the customer, with an Excel export ----
 const UPH_GOAL_DEFAULT=605;
-// Hours-to-complete rates from the old flash: reaches per hour, and working hours per day.
-const FLASH_RATES={fc:2400, ltc:1440, dz:2400, obDay:16, ltcDay:8};
 const uphGoal=()=>num(SETTINGS.uphGoal)>0?num(SETTINGS.uphGoal):UPH_GOAL_DEFAULT;
 function flashWeek(d){ const x=parseIso(d); x.setDate(x.getDate()-x.getDay()); const s=iso(x); return {start:s, end:addDays(s,6)}; }
 const fadd=(...xs)=>xs.some(x=>x!=null)?xs.reduce((t,x)=>t+(x||0),0):null;
@@ -1232,18 +1230,6 @@ function flashModel(d){
     cols:[["Day","text"],["Live unloads scheduled","int"],["Other trailers","int"],["Total trailers to process","int"],["Carryover rec / ptw","int"],["Trailers unloaded","int"],["Pallets received","int"],["Pallets putaway","int"],["Open PO issues","int"]],
     rows:ib, total:["Total",sum(ib,1),sum(ib,2),sum(ib,3),last(ib,4),sum(ib,5),sum(ib,6),sum(ib,7),last(ib,8)],
     note:"Live unloads and other trailers are the appointments and drops scheduled the day before. Carryover and open PO issues in the total row are the last day of the week."+(SF.oldestPO?" Oldest open PO: "+parseIso(String(SF.oldestPO)).toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"numeric"})+" (WIP Entry "+shortDate(snap)+").":"")});
-  // WIP snapshot
-  if(snap||eosDay(addDays(w.end,1))){
-    const sd=snap||addDays(w.end,1), a=autoView(sd)||{}, uw=(MORNING[sd]&&MORNING[sd].unwaved)||{};
-    const R=FLASH_RATES;
-    const row=(name,wr,ur,wu,uu,rate,perDay)=>{ const tr=fadd(wr,ur), tu=fadd(wu,uu), h=fdiv(tr,rate); return [name,wr,ur,tr,wu,uu,tu,h,fdiv(h,perDay)]; };
-    const rows=[row("Outbound FC",a.obWaved,uw.obReaches,a.obWavedUnits,uw.obUnits,R.fc,R.obDay),
-      row("LTC",a.ltcCarry,uw.ltcReaches,a.ltcCarryUnits,uw.ltcUnits,R.ltc,R.ltcDay),
-      row("DZ to sort",fadd(a.obDz,a.obStat),null,a.obDzUnits,null,R.dz,R.obDay)];
-    S.push({key:"wip", title:"WIP", color:"#e8a33d",
-      cols:[["","text"],["Waved reaches","int"],["Unwaved reaches","int"],["Total reaches","int"],["Waved units","int"],["Unwaved units","int"],["Total units","int"],["Hours to complete","d1"],["Days to complete","d2"]],
-      rows, note:`As of start of shift ${longDate(sd)}: waved is end of day ${a.src?shortDate(a.src):"(no scorecard day)"} from the scorecard, unwaved is from that morning's unwaved report. DZ to sort includes Stat 30. Hours to complete at ${fmt(R.fc)} FC, ${fmt(R.ltc)} LTC and ${fmt(R.dz)} DZ reaches per hour; days at ${R.obDay} outbound and ${R.ltcDay} LTC hours a day.`});
-  }
   // Outbound
   const ob=days.map(x=>{ const fcC=T(x,"fcc"), fcU=T(x,"obu"), lC=T(x,"lcart"), lR=T(x,"reach"), lU=T(x,"units");
     return [dayName(x),T(x,"ob"),fcC,fcU,lC,lR,lU,fadd(fcC,lC),fadd(fcU,lU),T(x,"slap"),T(x,"load"),T(x,"inv")]; });
