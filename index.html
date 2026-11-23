@@ -1196,7 +1196,10 @@ function eosDay(d){
 function autoFor(d){
   const s=eosDay(d); if(!s) return null;
   const r=DATA[s], n=v=>v==null?null:v, add=(...xs)=>xs.some(x=>x!=null)?xs.reduce((t,x)=>t+(x||0),0):null;
-  const ls=r.lw2>0?2:1, os=r.ow2>0?2:1;
+  // 2nd shift is the true end of day whenever it was entered, even when it's 0; blank falls back to 1st shift.
+  // LTFC waved is typed in, so blank means not entered. OB waved is a formula that shows 0 before anyone
+  // fills it in, so OB counts as entered when it isn't 0 or when 2nd shift typed its DZ / Stat 30 numbers.
+  const ls=r.lw2!=null?2:1, os=((r.ow2!=null&&r.ow2!==0)||r.dz2!=null||r.st2!=null)?2:1;
   const obW=n(r["ow"+os]), dz=n(r["dz"+os]), st=n(r["st"+os]);
   const obWU=n(r["owu"+os]), dzU=n(r["dzu"+os]);
   return {src:s, ltcShift:ls, obShift:os, ltcCarry:n(r["lw"+ls]), ltcCarryUnits:n(r["lwu"+ls]),
@@ -1257,7 +1260,7 @@ function renderMorning(box,entry){
   const a=autoView(d), A=a||{}, F=AF(), uw=curUW(d), saved=MORNING[d];
   const v=x=>x==null?'<span class="miss">not entered</span>':fmt(x);
   const u=x=>x==null?"":`<small>${fmt(x)} units</small>`;
-  const shiftNote=s=>s===2?"2nd shift end of day":"1st shift end of day (2nd shift blank or 0)";
+  const shiftNote=s=>s===2?"2nd shift end of day":"1st shift end of day (2nd shift blank)";
   const pg=(a&&MORNING[a.src]&&MORNING[a.src].goals)||{};
   const vsGoal=(act,g)=>(g>0&&act!=null)?`<small>goal ${fmt(g)} &middot; <b class="${act>=g?"up":"down"}">${Math.round(act/g*100)}%</b></small>`:"";
   const pw=prevWorkday(d);
