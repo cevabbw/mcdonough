@@ -84,9 +84,9 @@ button:focus-visible,input:focus-visible{outline:2px solid #3d9fe8;outline-offse
 .dayline h2{margin:0;font-size:24px;font-weight:800;}
 .dayline .meta{color:var(--text-dim);font-size:13px;}
 
-.tabs{display:flex;gap:6px;margin-bottom:24px;flex-wrap:wrap;}
+.tabs{display:flex;gap:4px;margin-bottom:24px;flex-wrap:wrap;}
 .tab{background:transparent;border:none;color:var(--text-dim);font-family:inherit;font-size:14px;font-weight:800;
-  letter-spacing:.6px;text-transform:uppercase;padding:12px 22px;border-radius:8px;cursor:pointer;}
+  letter-spacing:.4px;text-transform:uppercase;padding:10px 15px;border-radius:8px;cursor:pointer;white-space:nowrap;}
 .tab:hover{color:var(--text);}
 .tab.active{background:var(--accent);color:#fff;}
 .kpi-grid{display:grid;grid-template-columns:repeat(var(--cols,2),1fr);gap:18px;margin-bottom:26px;}
@@ -180,6 +180,34 @@ body.dragging .dropzone{border-color:#2f6fd0;background:rgba(47,111,208,.14);col
 .am-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:22px;align-items:start;}
 @media (max-width:1000px){.am-grid{grid-template-columns:1fr;}}
 .am-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:16px 20px 10px;}
+/* WIP Entry: cards flow into columns so short cards don't leave gaps */
+.am-grid.entry-grid{display:block;column-count:3;column-gap:18px;}
+@media (max-width:1280px){.am-grid.entry-grid{column-count:2;}}
+@media (max-width:800px){.am-grid.entry-grid{column-count:1;}}
+.entry-grid .am-card{break-inside:avoid;margin:0 0 18px;border-left:4px solid var(--acc,var(--card-border));padding:14px 18px 8px 18px;}
+.entry-grid .am-card h3{font-size:14.5px;margin-bottom:4px;}
+.entry-grid .am-row{padding:7px 0;}
+.entry-grid .am-in{width:110px;}
+.entry-grid .am-in.txt,.entry-grid textarea.am-in{width:100%;}
+.entry-grid .am-row.txt{grid-template-columns:minmax(96px,40%) 1fr;}
+.alloc{display:grid;gap:6px;margin-top:4px;}
+.alloc-h,.alloc-r{display:grid;grid-template-columns:138px 70px minmax(0,1fr) 28px;gap:6px;align-items:center;}
+.alloc-h span{font-size:11px;font-weight:700;color:var(--text-faint);letter-spacing:.3px;text-transform:uppercase;}
+.entry-grid .alloc .am-in{width:100%;font-size:13px;padding:6px 7px;}
+.entry-grid .alloc input[type=date].am-in{width:100%;font-size:13px;}
+.al-x{background:transparent;border:1px solid var(--card-border-light);color:var(--text-dim);border-radius:6px;height:32px;cursor:pointer;font-size:16px;line-height:1;}
+.al-x:hover{color:var(--bad);border-color:var(--bad);}
+.al-add{margin:10px 0 8px;padding:7px 12px;font-size:12.5px;}
+.alloc-sum{margin:0 0 8px;}
+.ad-t td.n,.ad-t th.n{text-align:right;}
+.ad-t tr.first td{border-top:2px solid var(--card-border-light);}
+.ad-t tbody tr:first-child td{border-top:none;}
+.ad-t tfoot td{font-weight:800;border-bottom:none;}
+.ad-t tfoot tr:first-child td{border-top:2px solid var(--card-border-light);}
+.ad-t .zero{color:var(--text-faint);}
+.dtag{display:inline-block;font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:5px;}
+.dtag.fc{background:rgba(111,155,224,.18);color:#2f5fb3;}
+.dtag.ltc{background:rgba(47,191,113,.16);color:#1b7d48;}
 .am-card h3{margin:0 0 6px;font-size:15px;font-weight:800;display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
 .am-card h3 small{font-size:12px;font-weight:600;color:var(--text-faint);}
 .am-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:8px 0;border-top:1px solid var(--card-border);font-size:13.5px;}
@@ -248,12 +276,21 @@ input.am-in[type=date]{background:var(--bg);color:var(--text);width:160px;font-s
 .dep-pill:disabled{cursor:not-allowed;opacity:.7;}
 .u-act{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
 .u-act .btn{padding:7px 12px;}
-.u-row{display:grid;grid-template-columns:minmax(0,1fr) 130px 150px;gap:8px 14px;align-items:center;padding:10px 0;border-top:1px solid var(--card-border);font-size:13.5px;}
+.u-tabs{font-size:13px;position:relative;}
+.u-tabs summary{cursor:pointer;color:var(--text-dim);list-style:none;padding:7px 10px;border:1px solid var(--card-border-light);border-radius:6px;background:var(--bg);white-space:nowrap;}
+.u-tabs summary::-webkit-details-marker{display:none;}
+.u-tabs summary b{color:var(--text);}
+.u-tab-opts{position:absolute;z-index:5;right:0;top:calc(100% + 4px);min-width:260px;background:var(--card);border:1px solid var(--card-border-light);border-radius:8px;padding:8px 12px;box-shadow:0 8px 24px rgba(20,33,90,.18);}
+.u-tab-opts label{display:flex;gap:8px;align-items:center;padding:5px 0;color:var(--text);}
+.u-tab-opts input{accent-color:#1e3a9a;}
+.u-presets{display:flex;gap:6px;margin-top:6px;padding-top:8px;border-top:1px solid var(--card-border);}
+.u-presets .btn{padding:6px 10px;font-size:12px;}
+.u-row{display:grid;grid-template-columns:minmax(0,1fr) 130px 190px 150px;gap:8px 14px;align-items:center;padding:10px 0;border-top:1px solid var(--card-border);font-size:13.5px;}
 .u-row .who{min-width:0;}
 .u-row .who b{display:block;overflow:hidden;text-overflow:ellipsis;}
 .u-row .who small{display:block;font-size:11px;color:var(--text-faint);word-break:break-all;margin-top:2px;}
 .u-row select.am-in{width:130px;text-align:left;font-weight:600;}
-.u-row .btn.warn{border-color:var(--bad);color:var(--bad);}
+.u-row .btn.warn{border-color:var(--bad);color:var(--bad);background:transparent;}
 .u-form{display:grid;gap:10px;}
 .u-form .field{margin:0;}
 .u-form select.am-in,.u-form input.am-in{width:100%;text-align:left;font-weight:500;}
@@ -364,6 +401,7 @@ onAuthStateChanged(auth, u => window.dispatchEvent(new CustomEvent("fb-auth", {
   <nav class="tabs" role="tablist">
     <button type="button" class="tab active" data-tab="sum" role="tab">Previous Day Recap</button>
     <button type="button" class="tab" data-tab="am" role="tab">Current WIP</button>
+    <button type="button" class="tab" data-tab="alloc" role="tab">Allocation</button>
     <button type="button" class="tab" data-tab="stor" role="tab">Storage Capacity &amp; Utilization</button>
     <button type="button" class="tab" data-tab="ib" role="tab">Inbound</button>
     <button type="button" class="tab" data-tab="ltfc" role="tab">LTFC</button>
@@ -516,6 +554,7 @@ onAuthStateChanged(auth, u => window.dispatchEvent(new CustomEvent("fb-auth", {
         <div class="send-opts">
           <label><input type="checkbox" value="sum" checked> Previous Day Recap</label>
           <label><input type="checkbox" value="am" checked> Current WIP</label>
+          <label><input type="checkbox" value="alloc"> Allocation</label>
         </div>
       </details>
     </div>
@@ -807,6 +846,48 @@ function wirePP(){
     };
   };
 }
+// Allocation tab: unwaved allocation summary by Date Created (from the morning's unwaved report) + oldest allocations.
+function renderAllocTab(box){
+  const d=current, doc=MORNING[d]||{}, uw=doc.unwaved, F=doc.form||{}, bd=uw&&uw.byDate;
+  const FC="#6f9be0", LT="#2fbf71", AC="#e8a33d", D="&mdash;";
+  const day=x=>parseIso(x).toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"numeric"});
+  const age=x=>{ const n=Math.round((parseIso(d)-parseIso(x))/864e5); return n<=0?"today":n===1?"1 day":n+" days"; };
+  let html="";
+  if(!bd){
+    html+=deptHead(AC,"Unwaved allocation summary at start of shift")+`<div class="empty"><h3>No allocation summary for ${shortDate(d)}</h3>
+      <p>${uw&&!uw.legacy?"The unwaved report loaded for this day was loaded before this tab existed. Load it again on WIP Entry.":"Load this morning's unwaved report on WIP Entry to fill this tab."}</p></div>`;
+  }else{
+    const dates=Object.keys(bd).sort();
+    const tot=dates.reduce((t,k)=>({fr:t.fr+(bd[k].obReaches||0),fu:t.fu+(bd[k].obUnits||0),lr:t.lr+(bd[k].ltcReaches||0),lu:t.lu+(bd[k].ltcUnits||0)}),{fr:0,fu:0,lr:0,lu:0});
+    html+=deptHead(AC,"Unwaved allocation summary at start of shift")+deptGrid([
+      kpiCard(FC,"FC unwaved",fmt(tot.fr),"reaches",`<b>${fmt(tot.fu)}</b> units`),
+      kpiCard(LT,"LTC unwaved",fmt(tot.lr),"reaches",`<b>${fmt(tot.lu)}</b> units`),
+      kpiCard(AC,"Oldest date created",day(dates[0]),"",`<b>${age(dates[0])}</b> old &middot; ${dates.length} date${dates.length===1?"":"s"} unwaved`)],3);
+    const z=v=>v?fmt(v):`<span class="zero">0</span>`;
+    html+=`<div class="kpi alloc-sum" style="--kpi-accent:${AC}"><div class="sched-wrap" style="padding:0"><table class="sched-t ad-t">
+      <thead><tr><th>Date Created</th><th>Age</th><th>DT</th><th class="n">Reaches</th><th class="n">Units</th></tr></thead><tbody>
+      ${dates.map(k=>{ const x=bd[k]; return `<tr class="first"><td rowspan="2"><b>${day(k)}</b></td><td rowspan="2">${age(k)}</td><td><span class="dtag fc">FC</span></td><td class="n">${z(x.obReaches)}</td><td class="n">${z(x.obUnits)}</td></tr>
+        <tr><td><span class="dtag ltc">LTC</span></td><td class="n">${z(x.ltcReaches)}</td><td class="n">${z(x.ltcUnits)}</td></tr>`; }).join("")}
+      </tbody><tfoot><tr><td colspan="2">Total</td><td><span class="dtag fc">FC</span></td><td class="n">${fmt(tot.fr)}</td><td class="n">${fmt(tot.fu)}</td></tr>
+        <tr><td colspan="2"></td><td><span class="dtag ltc">LTC</span></td><td class="n">${fmt(tot.lr)}</td><td class="n">${fmt(tot.lu)}</td></tr></tfoot></table></div>
+      <p class="modal-note" style="margin:10px 0 0">FC = FC reaches for every DT except NCV. LTC = LTC reaches + NCV FC reaches.${uw.file?` From ${esc(uw.file)}.`:""}</p></div>`;
+  }
+  box.innerHTML=html+allocSection(F,d);
+}
+// Oldest allocation: blank on WIP Entry reads 0.
+function allocSection(F,d){
+  const A="#e2231a", rows=allocRows(F).filter(allocFilled).sort((a,b)=>String(a.date||"9").localeCompare(String(b.date||"9")));
+  const age=x=>{ if(!x) return ""; const n=Math.round((parseIso(d)-parseIso(String(x)))/864e5); return n<=0?"today":n===1?"1 day old":n+" days old"; };
+  const dt=x=>x?esc(parseIso(String(x)).toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"numeric"})):"&mdash;";
+  const body=rows.length?`<div class="sched-wrap" style="padding:0"><table class="sched-t"><thead><tr><th>Date Created</th><th>DT</th><th>Reason</th><th style="text-align:right">Age</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr><td>${dt(r.date)}</td><td>${esc(r.dt||"—")}</td><td>${esc(r.reason||"—")}</td><td style="text-align:right">${esc(age(r.date))}</td></tr>`).join("")}</tbody></table></div>`:"";
+  const oldest=rows.find(r=>r.date);
+  return `<h3 class="dept-h" style="--dept:${A}">Oldest allocation</h3>
+    <section class="kpi-grid three dept-grid" style="--cols:1"><div class="kpi" style="--kpi-accent:${A}">
+      <div class="label">${rows.length?(rows.length===1?"1 allocation":rows.length+" allocations"):"Oldest allocations"}</div>
+      <div class="value">${rows.length?(oldest?dt(oldest.date):rows.length):"0"}</div>
+      ${rows.length&&oldest?`<div class="extra">Oldest is <b>${esc(age(oldest.date))}</b></div>`:""}${body}</div></section>`;
+}
 // Scheduled loads from the week of date d onward. Each card opens to the loads, with a Departed toggle that everyone shares.
 let schedOpen={SB2:false,BBWD:false};
 function schedSection(d,F){
@@ -897,13 +978,14 @@ function recapTotals(days,multi){
 
 function renderDay(){
   pick.value=current;
-  const wipTab=tab==="am"||tab==="ame"||tab==="users"||tab==="stor";
+  const wipTab=["am","ame","users","stor","alloc"].includes(tab);
   document.getElementById("dayTitle").textContent=wipTab?longDate(current):rangeLabel();
   const last=latestDate();
   document.getElementById("dataMeta").textContent = last ? `Scorecard data through ${shortDate(last)}, ${last.slice(0,4)}` : "";
   const box=document.getElementById("dayContent");
   if(tab==="users"){ renderUsers(box); return; }
   if(tab==="stor"){ document.getElementById("dataMeta").textContent=""; renderStorage(box); return; }
+  if(tab==="alloc"){ document.getElementById("dataMeta").textContent=""; renderAllocTab(box); return; }
   if(tab==="am") document.getElementById("dataMeta").textContent="";
   if(tab==="am"||tab==="ame"){ renderMorning(box,tab==="ame"); return; }
   const keys=TABS[tab], days=viewDays();
@@ -1033,15 +1115,30 @@ function render(){
     else if(tab==="ltfc"){ renderChart("reachChart","reach"); renderChart("unitChart","units"); renderChart("rphChart","rph"); }
     else if(tab==="ob"){ renderChart("obChart","ob"); renderChart("obuChart","obu"); renderChart("invChart","inv"); renderChart("cphChart","cph"); renderChart("slapChart","slap"); }
   }
-  document.getElementById("foot").textContent=(SOURCE&&!["users","am","stor"].includes(tab))?"Source: "+SOURCE+". Blank cells count as not entered, not zero.":"";
+  document.getElementById("foot").textContent=(SOURCE&&!["users","am","stor","alloc"].includes(tab))?"Source: "+SOURCE+". Blank cells count as not entered, not zero.":"";
 }
 
+// Tabs a person can see (set per person on the Users tab). null = every tab. Admins always see every tab.
+const TAB_LIST=[["sum","Previous Day Recap"],["am","Current WIP"],["alloc","Allocation"],["stor","Storage Capacity & Utilization"],["ib","Inbound"],["ltfc","LTFC"],["ob","Outbound"],["ame","WIP Entry"]];
+const BBW_VIEW={sum:true,am:true,stor:true};
+let myTabs=null;
+function tabAllowed(t){ return t==="users"?myRole==="admin":(myRole==="admin"||!myTabs||!!myTabs[t]); }
+function applyTabs(){
+  document.querySelectorAll(".tab").forEach(b=>{ if(b.id!=="usersTab") b.hidden=!tabAllowed(b.dataset.tab); });
+  document.querySelectorAll('#sendPick input').forEach(i=>{ const ok=tabAllowed(i.value); i.closest("label").hidden=!ok; if(!ok) i.checked=false; });
+  if(!tabAllowed(tab)){ const first=TAB_LIST.find(([k])=>tabAllowed(k)); if(first) goTab(first[0]); }
+}
+function goTab(t){
+  if(t==="sum"&&tab!=="sum"){ rangeKey="prev"; current=recapDay(); }
+  else if(["am","ame","stor","alloc"].includes(t)&&!["am","ame","stor","alloc"].includes(tab)) current=iso(new Date());
+  setTab(t);
+}
 function setTab(t){
   tab=t;
   document.querySelectorAll(".tab").forEach(x=>{ const on=x.dataset.tab===t; x.classList.toggle("active",on); x.setAttribute("aria-selected",on); });
   render();
 }
-document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{ if(b.dataset.tab==="sum"&&tab!=="sum"){ rangeKey="prev"; current=recapDay(); } else if(["am","ame","stor"].includes(b.dataset.tab)&&!["am","ame","stor"].includes(tab)) current=iso(new Date()); setTab(b.dataset.tab); });
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{ if(tabAllowed(b.dataset.tab)) goTab(b.dataset.tab); });
 pick.addEventListener("change",()=>{ if(pick.value){ current=pick.value; rangeKey="day"; render(); } });
 document.getElementById("prevDay").onclick=()=>{ current=addDays(current,-1); rangeKey="day"; render(); };
 document.getElementById("nextDay").onclick=()=>{ current=addDays(current,1); rangeKey="day"; render(); };
@@ -1065,7 +1162,7 @@ function customChanged(){
 }
 rFromEl.addEventListener("change",customChanged); rToEl.addEventListener("change",customChanged);
 function syncRangeUI(){
-  const wipTab=tab==="am"||tab==="ame"||tab==="users"||tab==="stor";
+  const wipTab=["am","ame","users","stor","alloc"].includes(tab);
   document.getElementById("rangeBar").hidden=wipTab;
   document.getElementById("granSeg").hidden=tab==="sum";
   rangeSel.value=rangeKey;
@@ -1309,6 +1406,7 @@ function renderMorning(box,entry){
   if(amView){
     // Current WIP: high-level cards for the morning call, by department. Details live on WIP Entry.
     const D="&mdash;", n0=x=>x==null||x===""?D:fmt(+x,(+x)%1?1:0);
+    const z0=x=>x==null||x===""?"0":fmt(+x,(+x)%1?1:0);   // label slap: blank on WIP Entry reads 0
     const units=x=>x==null?"":`<b>${fmt(x)}</b> units`;
     const ageOf=iso=>{ if(!iso) return ""; const days=Math.round((parseIso(d)-parseIso(String(iso)))/864e5); return days<=0?"today":days===1?"1 day old":days+" days old"; };
     const dateVal=iso=>iso?esc(parseIso(String(iso)).toLocaleDateString("en-US",{month:"short",day:"numeric"})):D;
@@ -1349,7 +1447,7 @@ function renderMorning(box,entry){
     kc(OB,"Capacity today",cc("obCap"),"cartons",`Sorter <b data-c="sorterCap">${D}</b> &middot; label slap <b data-c="lsCap">${D}</b>`),
     kc(OB,"Carryover to pick",A.obCarry==null?D:fmt(A.obCarry),"",`Waved <b>${A.obWaved==null?D:fmt(A.obWaved)}</b> &middot; DZ <b>${A.obDz==null?D:fmt(A.obDz)}</b> &middot; Stat 30 <b>${A.obStat==null?D:fmt(A.obStat)}</b>`),
     kc(OB,"Unwaved",uw&&uw.obReaches!=null?fmt(uw.obReaches):D,"",uw?units(uw.obUnits):"Unwaved report not loaded"),
-    kc(OB,"Cartons to label slap",n0(F.lsCartons),"",`<b>${n0(F.lsTeams)}</b> teams &times; <b>${n0(F.lsHours)}</b> hrs &middot; loads ready <b>${n0(F.lsLoadsReady)}</b>`),
+    kc(OB,"Cartons to label slap",z0(F.lsCartons),"",`<b>${z0(F.lsTeams)}</b> teams &times; <b>${z0(F.lsHours)}</b> hrs &middot; loads ready <b>${z0(F.lsLoadsReady)}</b>`),
     notes(OB,"Load concerns",[["",F.lsConcerns]])])}
   ${head(T85,"TT 85 unwaved")}
   ${grid([kc(T85,"LTC",l85[0],"reaches",l85[1]), kc(T85,"Outbound",o85[0],"reaches",o85[1]), kc(T85,"Total",ttSum("85")[0],"reaches",ttSum("85")[1])],3)}
@@ -1365,18 +1463,18 @@ function renderMorning(box,entry){
   ${(canWrite===false||!mdb)?"":`<div class="dropzone" id="dropZone" role="button" tabindex="0" aria-label="Drag files here or click to choose files">
     <b>Drag files here</b> or click to choose: the scorecard, the unwaved report and the outbound schedule, one at a time or all together.
     ${dropLog.length?`<ul>${dropLog.map(x=>`<li class="${x.ok?"ok":"bad"}">${x.ok?"&#10003;":"&#10007;"} ${esc(x.name)} &rarr; ${esc(x.what)}</li>`).join("")}</ul>`:""}</div>`}
-  <div class="am-grid">
-    <div class="am-card"><h3>Previous day</h3>
+  <div class="am-grid entry-grid">
+    <div class="am-card" style="--acc:#e8a33d"><h3>Previous day</h3>
       ${inRow("laborHours","Hours worked yesterday","Total for "+esc(longDate(prevWorkday(d)))+". Used for UPH on the Previous Day Recap")}
     </div>
-    <div class="am-card"><h3>Inbound</h3>
+    <div class="am-card" style="--acc:#a78bfa"><h3>Inbound</h3>
       ${inRow("ibLives","Lives","Scheduled appointments")}
       ${inRow("ibDrops","Drops")}
       ${inRow("containers","Containers")}
       ${inRow("oldestPO","Oldest open PO date","","date")}
       ${inRow("oldestWorked","Oldest date being worked","","date")}
     </div>
-    <div class="am-card"><h3>LTC</h3>
+    <div class="am-card" style="--acc:#2fbf71"><h3>LTC</h3>
       <div class="am-pick" style="border-top:none"><div></div><div class="h">1st shift</div><div class="h">2nd shift</div>
         <div class="lbl">Veteran pickers</div>${fIn("vet1","Veteran pickers, 1st shift")}${fIn("vet2","Veteran pickers, 2nd shift")}
         <div class="lbl">Trainee pickers</div>${fIn("trn1","Trainee pickers, 1st shift")}${fIn("trn2","Trainee pickers, 2nd shift")}
@@ -1384,11 +1482,11 @@ function renderMorning(box,entry){
       ${inRow("vetRate","Veteran rate","Reaches per hour")}
       ${inRow("trnRate","Trainee rate","Reaches per hour")}
     </div>
-    <div class="am-card"><h3>Outbound</h3>
+    <div class="am-card" style="--acc:#6f9be0"><h3>Outbound</h3>
       ${inRow("sorter1","Sorter capacity, 1st shift","Cartons")}
       ${inRow("sorter2","Sorter capacity, 2nd shift","Cartons")}
     </div>
-    <div class="am-card"><h3>Label slap</h3>
+    <div class="am-card" style="--acc:#6f9be0"><h3>Label slap</h3>
       ${inRow("lsCartons","Cartons to slap today")}
       ${inRow("lsTeams","Teams","3 people per team")}
       ${inRow("lsHours","Hours")}
@@ -1396,16 +1494,20 @@ function renderMorning(box,entry){
       ${inRow("lsLoadsReady","Loads ready to load out")}
       ${inRow("lsConcerns","Load concerns","","text")}
     </div>
-    <div class="am-card"><h3>Scheduled loads</h3>
+    <div class="am-card" style="--acc:#e2231a"><h3>Oldest allocation</h3>
+      ${allocEditor()}
+    </div>
+    <div class="am-card" style="--acc:#e8a33d"><h3>Scheduled loads</h3>
       <p class="modal-note" style="margin:0 0 4px">SB2 and BBWD come from the outbound schedule. Type BIA and other non-DA loads here.</p>
       ${inRow("bia","BIA","","text")}
       ${inRow("nonDa","Other non-DA loads","","text")}
     </div>
   </div>`;
-  box.querySelectorAll(".am-in").forEach(el=>el.addEventListener("input",()=>{
+  box.querySelectorAll(".am-in[data-f]").forEach(el=>el.addEventListener("input",()=>{
     const f=el.dataset.f; amForm[f]=el.type==="number"?(el.value===""?"":+el.value):el.value;
     markDraft(current); amStatus();
   }));
+  wireAlloc(box);
   document.getElementById("amSave").onclick=saveMorning;
   document.getElementById("uwBtn").onclick=()=>document.getElementById("uwIn").click();
   document.getElementById("uwIn").addEventListener("change",loadUnwaved);
@@ -1414,6 +1516,36 @@ function renderMorning(box,entry){
   const dz=document.getElementById("dropZone");
   if(dz){ dz.onclick=()=>document.getElementById("dropIn").click(); dz.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); dz.click(); } }; }
   updateComputed(); amStatus();
+}
+// Oldest allocation: one line per allocation (Date Created, DT, Reason), with Add row / remove.
+function allocRows(f){ const a=(f&&f.oldestAlloc)||[]; return (Array.isArray(a)?a:Object.values(a)).filter(Boolean); }
+const allocFilled=r=>r&&[r.date,r.dt,r.reason].some(x=>x!=null&&String(x).trim()!=="");
+function allocEditor(){
+  const rows=allocRows(amForm), list=rows.length?rows:[{}], dis=(canWrite===false||!mdb)?" disabled":"";
+  return `<div class="alloc" role="table" aria-label="Oldest allocations">
+    <div class="alloc-h" role="row"><span>Date Created</span><span>DT</span><span>Reason</span><span></span></div>
+    ${list.map((r,i)=>`<div class="alloc-r" role="row">
+      <input class="am-in" type="date" data-al="${i}" data-k="date" value="${esc(r.date||"")}" aria-label="Date created, row ${i+1}"${dis}>
+      <input class="am-in txt" type="text" data-al="${i}" data-k="dt" value="${esc(r.dt||"")}" placeholder="LTC" aria-label="DT, row ${i+1}"${dis}>
+      <input class="am-in txt" type="text" data-al="${i}" data-k="reason" value="${esc(r.reason||"")}" placeholder="NO INV" aria-label="Reason, row ${i+1}"${dis}>
+      <button type="button" class="al-x" data-al-del="${i}" aria-label="Remove row ${i+1}" title="Remove row"${dis}>&times;</button></div>`).join("")}
+    </div>
+    <button type="button" class="btn al-add" id="allocAdd"${dis}>+ Add row</button>`;
+}
+function wireAlloc(box){
+  const rows=()=>{ let a=allocRows(amForm); if(!a.length){ a=[{}]; } amForm.oldestAlloc=a; return a; };
+  box.querySelectorAll("[data-al]").forEach(el=>el.addEventListener("input",()=>{
+    const a=rows(), i=+el.dataset.al; a[i]={...(a[i]||{}),[el.dataset.k]:el.value.trim()?el.value:""};
+    markDraft(current); amStatus();
+  }));
+  box.querySelectorAll("[data-al-del]").forEach(b=>b.onclick=()=>{
+    const a=rows(); a.splice(+b.dataset.alDel,1); amForm.oldestAlloc=a; markDraft(current); render();
+  });
+  const add=document.getElementById("allocAdd");
+  if(add) add.onclick=()=>{
+    const a=rows(); a.push({}); markDraft(current); render();
+    const ins=document.querySelectorAll('[data-k="date"]'); if(ins.length) ins[ins.length-1].focus();
+  };
 }
 function markDraft(d){ if(!amDrafts[d]){ amDrafts[d]=amForm; draftBase[d]=MORNING[d]&&MORNING[d].savedAt; } }
 function setC(name,text,cls){ document.querySelectorAll(`[data-c="${name}"]`).forEach(el=>{ el.textContent=text; el.classList.remove("wip-hi","wip-ok"); if(cls) el.classList.add(cls); }); }
@@ -1456,6 +1588,33 @@ function amStatus(){
 }
 // Unwaved detail report: LTC = LTC reaches + NCV FC reaches; Outbound = FC reaches for every DT except NCV.
 // The same split is also kept for TT 90 on its own.
+// Excel dates arrive as numbers (days since 1900) or Date objects.
+function xlIso(v){
+  if(v instanceof Date) return iso(new Date(v.getFullYear(),v.getMonth(),v.getDate()+(v.getHours()>=12?1:0)));
+  if(typeof v==="number"&&v>20000&&v<80000){ const d=new Date(Math.round((v-25569)*864e5)); return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")+"-"+String(d.getUTCDate()).padStart(2,"0"); }
+  return cellIso(v);
+}
+// Per Date Created: FC (outbound) = FC reaches for every DT except NCV; LTC = LTC reaches + NCV FC reaches.
+function byDateOut(m){ const o={}; for(const [d,t] of Object.entries(m)) o[d]=uwSplit(t); return Object.keys(o).length?o:null; }
+function parseAllocByDate(wb){
+  const name=wb.SheetNames.find(n=>/^allocations?\s*by\s*date$/i.test(n.trim())); if(!name) return null;
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:null});
+  const low=c=>String(c??"").trim().toLowerCase();
+  const hr=rows.findIndex(r=>r&&r.some(c=>low(c)==="datecreated")&&r.some(c=>low(c)==="sum of fcreaches"));
+  if(hr<0) return null;
+  const h=rows[hr].map(low), ix=k=>h.indexOf(k);
+  const c={d:ix("datecreated"),dt:ix("dt"),fr:ix("sum of fcreaches"),fu:ix("sum of fcunits"),lr:ix("sum of ltcreaches"),lu:ix("sum of ltcunits")};
+  if(Object.values(c).some(i=>i<0)) return null;
+  const m={}; let d=null;
+  for(let i=hr+1;i<rows.length;i++){
+    const r=rows[i]; if(!r) continue;
+    if(/^grand total$/i.test(String(r[c.d]??"").trim())) break;
+    const nd=xlIso(r[c.d]); if(nd) d=nd;
+    const dt=String(r[c.dt]??"").trim().toUpperCase(); if(!d||!dt) continue;
+    uwAdd(m[d]=m[d]||uwZero(),dt,cellNum(r[c.fr]),cellNum(r[c.fu]),cellNum(r[c.lr]),cellNum(r[c.lu]));
+  }
+  return byDateOut(m);
+}
 function uwSplit(t){ return {ltcReaches:t.lr+t.nr, ltcUnits:t.lu+t.nu, obReaches:t.fr-t.nr, obUnits:t.fu-t.nu}; }
 function uwAdd(t,dt,fr,fu,lr,lu){ t.fr+=fr; t.fu+=fu; t.lr+=lr; t.lu+=lu; if(dt==="NCV"){ t.nr+=fr; t.nu+=fu; } }
 const uwZero=()=>({fr:0,fu:0,lr:0,lu:0,nr:0,nu:0});
@@ -1468,7 +1627,7 @@ function parseUnwaved(wb){
     if(hr<0) continue;
     const h=rows[hr].map(c=>String(c??"").trim()), ix=k=>h.indexOf(k);
     if(["FCReaches","FCUnits","LTCReaches","LTCUnits"].some(k=>ix(k)<0)) continue;
-    const all=uwZero(), t90=uwZero(), t85=uwZero(); let n=0;
+    const all=uwZero(), t90=uwZero(), t85=uwZero(), bd={}; let n=0;
     for(let i=hr+1;i<rows.length;i++){
       const r=rows[i]; if(!r) continue;
       const dt=String(r[ix("DT")]??"").trim().toUpperCase(); if(!dt) continue; // skips the typed-in totals row
@@ -1477,9 +1636,11 @@ function parseUnwaved(wb){
       const tt=ix("TT")>=0?String(r[ix("TT")]??"").trim():"";
       if(tt==="90") uwAdd(t90,dt,g("FCReaches"),g("FCUnits"),g("LTCReaches"),g("LTCUnits"));
       if(tt==="85") uwAdd(t85,dt,g("FCReaches"),g("FCUnits"),g("LTCReaches"),g("LTCUnits"));
+      const dc=ix("DateCreated")>=0?xlIso(r[ix("DateCreated")]):null;
+      if(dc) uwAdd(bd[dc]=bd[dc]||uwZero(),dt,g("FCReaches"),g("FCUnits"),g("LTCReaches"),g("LTCUnits"));
     }
     if(!n) throw new Error("The report has no detail rows.");
-    return {...uwSplit(all), rows:n, tt90:ix("TT")>=0?uwSplit(t90):null, tt85:ix("TT")>=0?uwSplit(t85):null, from:name};
+    return {...uwSplit(all), rows:n, tt90:ix("TT")>=0?uwSplit(t90):null, tt85:ix("TT")>=0?uwSplit(t85):null, byDate:byDateOut(bd)||parseAllocByDate(wb), from:name};
   }
   // 2) only the pivot ("Pivot Table"): DT is filled in on the first row of each group
   for(const name of wb.SheetNames){
@@ -1502,7 +1663,7 @@ function parseUnwaved(wb){
       if(tt==="85") uwAdd(t85,dt,cellNum(r[c.fr]),cellNum(r[c.fu]),cellNum(r[c.lr]),cellNum(r[c.lu]));
     }
     if(!n) continue;
-    return {...uwSplit(all), rows:n, tt90:uwSplit(t90), tt85:uwSplit(t85), from:name};
+    return {...uwSplit(all), rows:n, tt90:uwSplit(t90), tt85:uwSplit(t85), byDate:parseAllocByDate(wb), from:name};
   }
   throw new Error("Couldn't find the unwaved detail columns (DT, TT, FCReaches, FCUnits, LTCReaches, LTCUnits) or the pivot table.");
 }
@@ -1644,7 +1805,10 @@ async function loadUnwavedFile(f){
 }
 async function saveMorning(){
   if(!mdb||amSaving) return;
-  const d=current, f={...amForm}, body={form:f, goals:goalsOf(f), savedAt:new Date().toISOString()};
+  const d=current, f={...amForm};
+  const al=allocRows(f).filter(allocFilled).map(r=>({date:r.date||"",dt:(r.dt||"").trim(),reason:(r.reason||"").trim()}));
+  if(al.length) f.oldestAlloc=al; else delete f.oldestAlloc;
+  const body={form:f, goals:goalsOf(f), savedAt:new Date().toISOString()};
   const a=autoFor(d), sa=MORNING[d]&&MORNING[d].auto, best=(sa&&(!a||sa.src>a.src))?sa:a;
   if(best) body.auto=best;
   const uw=amUW[d]||(MORNING[d]&&MORNING[d].unwaved); if(uw) body.unwaved=uw;
@@ -1690,7 +1854,7 @@ function authMessage(e){
   return (e&&e.message)||"Sign-in failed.";
 }
 window.addEventListener("fb-auth",e=>{
-  fbHeard=true; fbStop(); stopAdmin(); fbUser=e.detail; myRole=null; acctUI();
+  fbHeard=true; fbStop(); stopAdmin(); fbUser=e.detail; myRole=null; myTabs=null; acctUI();
   document.getElementById("usersTab").hidden=true; if(tab==="users") setTab("sum");
   mdb=null; muser=null; canWrite=null;
   if(!fbUser){
@@ -1699,6 +1863,7 @@ window.addEventListener("fb-auth",e=>{
     amDate=null; render(); showAuth("signin"); return;
   }
   FB.write("users/"+fbUser.uid,{email:fbUser.email, name:fbUser.name, lastSignIn:new Date().toISOString()}).catch(()=>{});
+  fbOff.push(FB.listen("tabs/"+fbUser.uid, v=>{ myTabs=v&&typeof v==="object"&&Object.keys(v).length?v:null; applyTabs(); }, ()=>{}));
   fbOff.push(FB.listen("access/"+fbUser.uid, role=>{
     myRole=role;
     document.getElementById("usersTab").hidden=role!=="admin";
@@ -1711,11 +1876,12 @@ window.addEventListener("fb-auth",e=>{
     }
     authModal.hidden=true; canWrite=role==="edit"||role==="admin";
     if(!mdb) startData();
+    applyTabs();
     amDate=null; render();
   }, fbErr));
 });
 // ---- Users tab: admins add, approve, change and remove access ----
-let myRole=null, ACCESS={}, USERS={}, REQUESTS={}, adminOff=[], removeArm=null;
+let myRole=null, ACCESS={}, USERS={}, REQUESTS={}, TABSETS={}, adminOff=[], removeArm=null;
 const ROLE_LABEL={view:"View",edit:"Edit",admin:"Admin"};
 function startAdmin(){
   if(adminOff.length) return;
@@ -1723,8 +1889,9 @@ function startAdmin(){
   adminOff.push(FB.listen("access",v=>{ ACCESS=v||{}; redraw(); },fbErr));
   adminOff.push(FB.listen("users",v=>{ USERS=v||{}; redraw(); },fbErr));
   adminOff.push(FB.listen("requests",v=>{ REQUESTS=v||{}; redraw(); },fbErr));
+  adminOff.push(FB.listen("tabs",v=>{ TABSETS=v||{}; redraw(); },fbErr));
 }
-function stopAdmin(){ adminOff.forEach(f=>{ try{ f(); }catch(e){} }); adminOff=[]; ACCESS={}; USERS={}; REQUESTS={}; }
+function stopAdmin(){ adminOff.forEach(f=>{ try{ f(); }catch(e){} }); adminOff=[]; ACCESS={}; USERS={}; REQUESTS={}; TABSETS={}; }
 const who=id=>(USERS[id]&&USERS[id].email)||(REQUESTS[id]&&REQUESTS[id].email)||id;
 const when=t=>t?new Date(t).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
 function renderUsers(box){
@@ -1738,7 +1905,7 @@ function renderUsers(box){
       <form class="u-form" id="uAdd" novalidate>
         <label class="field">Email<input class="am-in" type="email" id="uEmail" autocomplete="off"></label>
         <label class="field">Temporary password <span>(at least 6 characters; they can change it with Forgot password)</span><input class="am-in" type="text" id="uPass" autocomplete="off"></label>
-        <label class="field">Access<select class="am-in" id="uRole"><option value="view">View: read only</option><option value="edit" selected>Edit: save WIP, load scorecards</option><option value="admin">Admin: edit + manage users</option></select></label>
+        <label class="field">Access<select class="am-in" id="uRole"><option value="view">View: read only</option><option value="bbw">BBW view: Recap, Current WIP and Storage only</option><option value="edit" selected>Edit: save WIP, load scorecards</option><option value="admin">Admin: edit + manage users</option></select></label>
         <div class="modal-actions"><button type="submit" class="btn primary" id="uGo">Create account</button></div>
         <p class="modal-note" id="uMsg" role="status"></p>
       </form>
@@ -1755,7 +1922,7 @@ function drawUserLists(){
   document.getElementById("uReqCount").textContent=waiting.length||"";
   const reqName=id=>{ const n=REQUESTS[id].name; return n&&n!==REQUESTS[id].email?n+" \u00b7 ":""; };
   rq.innerHTML=waiting.length?waiting.map(id=>`<div class="am-row"><div class="lbl"><b style="color:var(--text)">${esc(reqName(id)+who(id))}</b><small>Asked ${esc(when(REQUESTS[id].at))}</small></div>
-      <div class="val u-act"><button type="button" class="btn" data-approve="${esc(id)}" data-role="view">Approve: View</button><button type="button" class="btn primary" data-approve="${esc(id)}" data-role="edit">Approve: Edit</button><button type="button" class="btn" data-dismiss="${esc(id)}">Dismiss</button></div></div>`).join("")
+      <div class="val u-act"><button type="button" class="btn" data-approve="${esc(id)}" data-role="view">Approve: View</button><button type="button" class="btn" data-approve="${esc(id)}" data-role="view" data-bbw="1" title="View only: Previous Day Recap, Current WIP, Storage">Approve: BBW view</button><button type="button" class="btn primary" data-approve="${esc(id)}" data-role="edit">Approve: Edit</button><button type="button" class="btn" data-dismiss="${esc(id)}">Dismiss</button></div></div>`).join("")
     :`<p class="modal-note">Nobody is waiting. When someone with an account signs in and isn't on the list, they show up here.</p>`;
   const ids=Object.keys(ACCESS).sort((a,b)=>(ACCESS[a]==="admin"?0:1)-(ACCESS[b]==="admin"?0:1)||who(a).localeCompare(who(b)));
   const admins=ids.filter(i=>ACCESS[i]==="admin").length;
@@ -1766,9 +1933,21 @@ function drawUserLists(){
     const nm=USERS[id]&&USERS[id].name&&USERS[id].name!==who(id)?USERS[id].name+" \u00b7 ":"";
     return `<div class="u-row"><div class="who"><b>${esc(nm+who(id))}${me?" (you)":""}</b><small>${esc(seen)} &middot; ${esc(id)}</small></div>
       <select class="am-in" data-role-for="${esc(id)}" aria-label="Access for ${esc(who(id))}"${me?" disabled":""}>${["view","edit","admin"].map(r=>`<option value="${r}"${ACCESS[id]===r?" selected":""}>${ROLE_LABEL[r]}</option>`).join("")}</select>
+      ${tabPicker(id)}
       <div class="u-act">${me?`<span class="modal-note">You can't remove yourself</span>`:`<button type="button" class="btn warn" data-remove="${esc(id)}"${lastAdmin?" disabled":""}>Remove</button>`}</div></div>`;
   }).join("");
-  rq.querySelectorAll("[data-approve]").forEach(b=>b.onclick=()=>approve(b.dataset.approve,b.dataset.role));
+  rq.querySelectorAll("[data-approve]").forEach(b=>b.onclick=()=>approve(b.dataset.approve,b.dataset.role,b.dataset.bbw?BBW_VIEW:null));
+  pp.querySelectorAll("[data-tabs-for] input").forEach(cb=>cb.onchange=()=>{
+    const box=cb.closest("[data-tabs-for]"), id=box.dataset.tabsFor;
+    const on=[...box.querySelectorAll("input:checked")].map(x=>x.value);
+    if(!on.length){ cb.checked=true; return toast("Leave at least one tab checked.",6000); }
+    const v=on.length===TAB_LIST.length?null:Object.fromEntries(on.map(k=>[k,true]));
+    FB.write("tabs/"+id,v).then(()=>toast(who(id)+(v?" now sees "+on.length+" tab"+(on.length===1?"":"s")+".":" now sees every tab."))).catch(fbErr);
+  });
+  pp.querySelectorAll("[data-tabs-preset]").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.tabsPreset, v=b.dataset.preset==="bbw"?BBW_VIEW:null;
+    FB.write("tabs/"+id,v).then(()=>toast(who(id)+(v?" now sees the BBW view.":" now sees every tab."))).catch(fbErr);
+  });
   rq.querySelectorAll("[data-dismiss]").forEach(b=>b.onclick=()=>FB.write("requests/"+b.dataset.dismiss,null).then(()=>toast("Request dismissed.")).catch(fbErr));
   pp.querySelectorAll("[data-role-for]").forEach(sel=>sel.onchange=()=>{
     const id=sel.dataset.roleFor, r=sel.value;
@@ -1779,16 +1958,26 @@ function drawUserLists(){
     const id=b.dataset.remove;
     if(removeArm!==id){ removeArm=id; b.textContent="Click again to remove"; setTimeout(()=>{ if(removeArm===id){ removeArm=null; drawUserLists(); } },4000); return; }
     removeArm=null;
-    FB.write("access/"+id,null).then(()=>{ FB.write("requests/"+id,null).catch(()=>{}); toast(who(id)+" no longer has access."); }).catch(fbErr);
+    FB.write("access/"+id,null).then(()=>{ FB.write("requests/"+id,null).catch(()=>{}); FB.write("tabs/"+id,null).catch(()=>{}); toast(who(id)+" no longer has access."); }).catch(fbErr);
   });
 }
-async function approve(id,role){
+function tabPicker(id){
+  if(ACCESS[id]==="admin") return `<div class="u-tabs"><span class="modal-note">All tabs (admin)</span></div>`;
+  const set=TABSETS[id], sel=k=>!set||!!set[k];
+  const isBBW=set&&Object.keys(set).length===3&&set.sum&&set.am&&set.stor;
+  const label=!set?"All tabs":isBBW?"BBW view":TAB_LIST.filter(([k])=>sel(k)).length+" of "+TAB_LIST.length+" tabs";
+  return `<details class="u-tabs" data-tabs-for="${esc(id)}"><summary>Tabs: <b>${label}</b></summary><div class="u-tab-opts">
+    ${TAB_LIST.map(([k,n])=>`<label><input type="checkbox" value="${k}"${sel(k)?" checked":""}> ${esc(n)}</label>`).join("")}
+    <div class="u-presets"><button type="button" class="btn" data-tabs-preset="${esc(id)}" data-preset="bbw">BBW view</button><button type="button" class="btn" data-tabs-preset="${esc(id)}" data-preset="all">All tabs</button></div></div></details>`;
+}
+async function approve(id,role,tabs){
   const name=who(id), req=REQUESTS[id];
   try{
+    await FB.write("tabs/"+id,tabs||null);
     await FB.write("access/"+id,role);
     if(req&&!USERS[id]) await FB.write("users/"+id,{email:req.email, name:req.name||req.email}).catch(()=>{});
     await FB.write("requests/"+id,null);
-    toast(name+" approved with "+ROLE_LABEL[role]+" access.");
+    toast(name+" approved with "+(tabs?"BBW view (Recap, Current WIP, Storage)":ROLE_LABEL[role]+" access")+".");
   }
   catch(e){ fbErr(e); }
 }
@@ -1804,13 +1993,14 @@ async function addPerson(e){
   try{
     const uid=await FB.createAccount(email,pass);
     await FB.write("users/"+uid,{email, addedAt:new Date().toISOString(), addedBy:fbUser.name});
-    await FB.write("access/"+uid,role);
-    msg.textContent=`Done. Send ${email} the dashboard link and the temporary password; they get ${ROLE_LABEL[role]} access.`;
+    if(role==="bbw") await FB.write("tabs/"+uid,BBW_VIEW);
+    await FB.write("access/"+uid,role==="bbw"?"view":role);
+    msg.textContent=`Done. Send ${email} the dashboard link and the temporary password; they get ${role==="bbw"?"the BBW view":ROLE_LABEL[role]+" access"}.`;
     document.getElementById("uEmail").value=""; document.getElementById("uPass").value="";
   }catch(err){
     const c=(err&&err.code)||"";
     if(/email-already-in-use/.test(c)){
-      if(existing){ await FB.write("access/"+existing,role).catch(fbErr); msg.textContent=`${email} already had an account, so it now has ${ROLE_LABEL[role]} access.`; }
+      if(existing){ if(role==="bbw") await FB.write("tabs/"+existing,BBW_VIEW).catch(fbErr); await FB.write("access/"+existing,role==="bbw"?"view":role).catch(fbErr); msg.textContent=`${email} already had an account, so it now has ${role==="bbw"?"the BBW view":ROLE_LABEL[role]+" access"}.`; }
       else msg.textContent=`${email} already has an account. Ask them to sign in once; they'll show up under Waiting for access for you to approve.`;
     }
     else if(/admin-restricted-operation|operation-not-allowed/.test(c)) msg.textContent="Firebase is set to block creating accounts from this page. Either create the account in Firebase (Authentication → Users → Add user) and have them sign in once so you can approve them here, or turn on Authentication → Settings → User actions → Enable create (sign-up).";
@@ -1952,7 +2142,7 @@ try{ toInput.value=localStorage.getItem("bbw-email-to")||""; }catch(e){}
 toInput.addEventListener("change",()=>{ try{ localStorage.setItem("bbw-email-to",toInput.value.trim()); }catch(e){} });
 let shotBlob=null, shotPromise=null;
 function waitFrame(){ return new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))); }
-const SEND_LABEL={sum:"Previous Day Recap", am:"Current WIP"};
+const SEND_LABEL={sum:"Previous Day Recap", am:"Current WIP", alloc:"Allocation"};
 const sendChoice=()=>[...document.querySelectorAll('#sendPick input:checked')].map(i=>i.value);
 // Render one tab the way it opens by default, then photograph the whole page (no buttons, tabs or footer).
 async function captureTab(t, withHeader, bg, scale){
