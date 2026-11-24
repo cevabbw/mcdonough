@@ -970,7 +970,8 @@ function allocSection(F,d){
       ${rows.length&&oldest?`<div class="extra">Oldest is <b>${esc(age(oldest.date))}</b></div>`:""}${body}</div></section>`;
 }
 // Scheduled loads from the week of date d onward. Each card opens to the loads, with a Departed toggle that everyone shares.
-let schedOpen={SB2:false,BBWD:false};
+let schedOpen={SB2:false,BBWD:false,OTHER:false};
+const SCHED_NAME={SB2:"SB2",BBWD:"BBWD",OTHER:"Other non-DA loads"};
 function schedSection(d,F){
   const SL="#e8a33d", wk=weekStart(d), we=addDays(wk,6), today=iso(new Date());
   const day=x=>parseIso(x).toLocaleDateString("en-US",{weekday:"short",month:"numeric",day:"numeric"});
@@ -982,22 +983,22 @@ function schedSection(d,F){
     const on=!!dep[l.key], who=on?`Checked by ${dep[l.key].by||"someone"} ${dep[l.key].at?new Date(dep[l.key].at).toLocaleDateString("en-US",{month:"short",day:"numeric"}):""}`:"Mark as departed";
     return `<button type="button" class="dep-pill${on?" on":""}" data-dep="${esc(l.key)}" aria-pressed="${on}" title="${esc(who)}"${canWrite?"":" disabled"}>${on?"&#10003; Departed":"Departed"}</button>`;
   };
-  const row=l=>`<tr class="${!done(l)&&l.exp<today?"late":""}"><td>${esc(day(l.exp))}</td><td>${esc(l.rts||"—")}</td><td>${esc(l.load||"—")}</td>${l.kind==="BBWD"?`<td>${esc(l.store||"?")}</td>`:""}<td>${esc(l.carrier||"—")}</td><td class="dep">${pill(l)}</td></tr>`;
-  const card=kind=>{
+  const row=l=>`<tr class="${!done(l)&&l.exp<today?"late":""}"><td>${esc(day(l.exp))}</td><td>${esc(l.rts||"—")}</td><td>${esc(l.load||"—")}</td>${l.kind==="BBWD"?`<td>${esc(l.store||"?")}</td>`:l.kind==="OTHER"?`<td>${esc(l.note||"—")}</td>`:""}<td>${esc(l.carrier||"—")}</td><td class="dep">${pill(l)}</td></tr>`;
+  const card=(kind,typed)=>{
     const ls=all.filter(l=>l.kind===kind), wkN=ls.filter(l=>l.exp<=we).length, open=ls.filter(l=>!done(l)).length;
     const head=`<button type="button" class="sched-head" data-open="${kind}" aria-expanded="${schedOpen[kind]}">
-        <span class="label">${kind}</span>
+        <span class="label">${SCHED_NAME[kind]}</span>
         <span class="value">${SCHED?ls.length:"—"}<span class="unit">scheduled</span></span>
-        <span class="extra">${SCHED?`<b>${wkN}</b> this week &middot; <b>${ls.length-wkN}</b> later &middot; <b>${open}</b> not departed`:"Load the outbound schedule on WIP Entry"}</span>
+        <span class="extra">${SCHED?`<b>${wkN}</b> this week &middot; <b>${ls.length-wkN}</b> later &middot; <b>${open}</b> not departed`:"Load the outbound schedule on WIP Entry"}${typed&&String(typed).trim()?`<br>Note: <b>${esc(typed)}</b>`:""}</span>
         <span class="chev" aria-hidden="true">${schedOpen[kind]?"&#9650;":"&#9660;"}</span></button>`;
-    const body=schedOpen[kind]&&SCHED?(ls.length?`<div class="sched-wrap"><table class="sched-t"><thead><tr><th>Depart</th><th>RTS #</th><th>Load #</th>${kind==="BBWD"?"<th>Store</th>":""}<th>Carrier</th><th>Departed</th></tr></thead>
+    const body=schedOpen[kind]&&SCHED?(ls.length?`<div class="sched-wrap"><table class="sched-t"><thead><tr><th>Depart</th><th>RTS #</th><th>Load #</th>${kind==="BBWD"?"<th>Store</th>":kind==="OTHER"?"<th>Type</th>":""}<th>Carrier</th><th>Departed</th></tr></thead>
         <tbody>${ls.map(row).join("")}</tbody></table></div>`:`<p class="modal-note">Nothing scheduled from this week on.</p>`):"";
     return `<div class="kpi sched${schedOpen[kind]?" open":""}" style="--kpi-accent:${SL}">${head}${body}</div>`;
   };
   const text=(label,v)=>`<div class="kpi kpi-notes" style="--kpi-accent:${SL}"><div class="label">${label}</div>
       <div class="note-row"><b style="text-align:left;font-weight:600">${v&&String(v).trim()?esc(v):"—"}</b></div></div>`;
   return `<h3 class="dept-h" style="--dept:${SL}">Scheduled loads<small>From the week of ${esc(shortDate(wk))} on</small></h3>
-    <section class="kpi-grid three dept-grid sched-grid" style="--cols:2">${card("SB2")}${card("BBWD")}${text("BIA",F.bia)}${text("Other non-DA loads",F.nonDa)}</section>`;
+    <section class="kpi-grid three dept-grid sched-grid" style="--cols:2">${card("SB2")}${card("BBWD")}${text("BIA",F.bia)}${card("OTHER",F.nonDa)}</section>`;
 }
 function wireSched(box){
   box.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{ schedOpen[b.dataset.open]=!schedOpen[b.dataset.open]; render(); });
@@ -1803,9 +1804,9 @@ function renderMorning(box,entry){
       ${inRow("lsConcerns","Load concerns","","text")}
     </div>
     <div class="am-card" style="--acc:#e8a33d"><h3>Scheduled loads</h3>
-      <p class="modal-note" style="margin:0 0 4px">SB2 and BBWD come from the outbound schedule. Type BIA and other non-DA loads here.</p>
+      <p class="modal-note" style="margin:0 0 4px">SB2, BBWD and other non-DA loads (W2W, DC, preloads and so on) come from the outbound schedule. Type BIA here, and any note to show on the other non-DA loads card.</p>
       ${inRow("bia","BIA","","text")}
-      ${inRow("nonDa","Other non-DA loads","","text")}
+      ${inRow("nonDa","Other non-DA loads note","","text")}
     </div>
     </div>
     <div class="ecol">
@@ -2030,7 +2031,9 @@ function parseSchedule(wb){
     const r=rows[i]; if(!r) continue;
     const note=String(r[G]??"").trim(), up=note.toUpperCase(); if(!note) continue;
     const bb=/BBWD\s*(\d{4})/.exec(up);
-    const kind=bb||/BBWD/.test(up)?"BBWD":/(^|[^A-Z0-9])SB2([^A-Z0-9]|$)/.test(up)?"SB2":null; if(!kind) continue;
+    // SB2 and BBWD get their own cards; any other load with a note (W2W, DC, G1, preloads...) is an other non-DA load.
+    if(/^(NONE|N\/A|NA|-+)$/.test(up)) continue;
+    const kind=bb||/BBWD/.test(up)?"BBWD":/(^|[^A-Z0-9])SB2([^A-Z0-9]|$)/.test(up)?"SB2":"OTHER";
     const exp=cellIso(r[E]); if(!exp) continue;
     const ld={exp, kind, note};
     if(/CANCEL/.test(up)) ld.cancelled=true;
@@ -2057,7 +2060,7 @@ async function loadScheduleFile(f){
     for(const l of loads){ const {key,...rec}=l; changes["schedule/loads/"+key]=JSON.parse(JSON.stringify(rec)); }
     await FB.update(changes);
     const wk=weekStart(iso(new Date())), n=loads.filter(l=>!l.cancelled&&l.exp>=wk).length;
-    toast(`Outbound schedule loaded: ${n} SB2/BBWD load${n===1?"":"s"} from this week on.`,8000);
+    toast(`Outbound schedule loaded: ${n} scheduled load${n===1?"":"s"} (SB2, BBWD and other non-DA) from this week on.`,8000);
   }catch(err){ toast("Couldn't load "+f.name+". "+err.message,12000); }
 }
 document.getElementById("schedIn").addEventListener("change",async e=>{ const f=e.target.files[0]; e.target.value=""; if(f) await loadScheduleFile(f); });
@@ -2458,7 +2461,7 @@ const sendChoice=()=>[...document.querySelectorAll('#sendPick input:checked')].m
 // Render one tab the way it opens by default, then photograph the whole page (no buttons, tabs or footer).
 async function captureTab(t, withHeader, bg, scale){
   if(t==="sum"){ rangeKey="prev"; current=recapDay(); }
-  else { current=iso(new Date()); schedOpen={SB2:true,BBWD:true}; }
+  else { current=iso(new Date()); schedOpen={SB2:true,BBWD:true,OTHER:true}; }
   setTab(t); await waitFrame();
   const wrap=document.querySelector(".wrap");
   return html2canvas(wrap,{backgroundColor:bg,scale,logging:false,windowWidth:Math.max(1280,document.documentElement.clientWidth),
