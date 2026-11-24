@@ -1215,6 +1215,14 @@ function flashSnapDay(w){
   const ks=Object.keys(MORNING).sort();
   return ks.find(k=>k>w.end&&k<=addDays(w.end,7)&&has(k)) || ks.filter(k=>k>=w.start&&k<=w.end&&has(k)).pop() || null;
 }
+// Oldest open PO / oldest date being worked: the last day of the week that has them on the scorecard.
+function flashOldest(days){
+  const f=x=>parseIso(x).toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"numeric"});
+  const v=x=>x===0?"none":x?f(x):"\u2014";
+  for(let i=days.length-1;i>=0;i--){ const r=DATA[days[i]]; if(r&&(r.pd1!=null||r.wd1!=null))
+    return " As of "+shortDate(days[i])+": oldest open PO "+v(r.pd1)+", oldest date being worked "+v(r.wd1)+"."; }
+  return "";
+}
 function flashModel(d){
   const w=flashWeek(d), all=[]; for(let i=0;i<7;i++) all.push(addDays(w.start,i));
   const T=(day,k)=>total(DATA[day],METRICS[k]);
@@ -1230,7 +1238,7 @@ function flashModel(d){
   S.push({key:"ib", title:"Inbound", color:DEPT.ib,
     cols:[["Day","text"],["Live unloads scheduled","int"],["Other trailers","int"],["Total trailers to process","int"],["Carryover rec / ptw","int"],["Trailers unloaded","int"],["Pallets received","int"],["Pallets putaway","int"],["Open PO issues","int"]],
     rows:ib, total:["Total",sum(ib,1),sum(ib,2),sum(ib,3),last(ib,4),sum(ib,5),sum(ib,6),sum(ib,7),last(ib,8)],
-    note:"Live unloads and other trailers are the appointments and drops scheduled the day before. Carryover and open PO issues in the total row are the last day of the week."+(SF.oldestPO?" Oldest open PO: "+parseIso(String(SF.oldestPO)).toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"numeric"})+" (WIP Entry "+shortDate(snap)+").":"")});
+    note:"Live unloads and other trailers are the appointments and drops scheduled the day before. Carryover and open PO issues in the total row are the last day of the week."+flashOldest(days)});
   // Outbound
   const ob=days.map(x=>{ const fcC=T(x,"fcc"), fcU=T(x,"obu"), lC=T(x,"lcart"), lR=T(x,"reach"), lU=T(x,"units");
     return [dayName(x),T(x,"ob"),fcC,fcU,lC,lR,lU,fadd(fcC,lC),fadd(fcU,lU),T(x,"slap"),T(x,"load"),T(x,"inv")]; });
@@ -1500,8 +1508,11 @@ const ROWS = {
   fc1:/^OB 1st FC Cartons Picked$/i,    fc2:/^OB 2nd FC Cartons Picked$/i,
   ld1:/^OB 1st Cartons Loaded$/i,       ld2:/^OB 2nd Cartons Loaded$/i,
   nd1:/^OB 1st No Demand$/i,            nd2:/^OB 2nd No Demand$/i,
-  rc1:/^OB 1st Recircs$/i,              rc2:/^OB 2nd Recircs$/i
+  rc1:/^OB 1st Recircs$/i,              rc2:/^OB 2nd Recircs$/i,
+  pd1:/^IB 1st Oldest POI date$/i,      wd1:/^IB 1st Oldest date being worked/i
 };
+// Rows that hold a date instead of a number (saved as YYYY-MM-DD).
+const DATE_ROWS=["pd1","wd1"];
 // End-of-day WIP rows: future days hold formula 0s, so a 0 here never counts as a day with data.
 const EOS_KEYS = ["lw1","lw2","ow1","ow2","dz1","dz2","st1","st2","ap1","dr1","lf1","pp1","lwu1","lwu2","owu1","owu2","dzu1","dzu2"];
 function toast(msg,ms){ const t=document.getElementById("toast"); t.textContent=msg; t.style.display="block"; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display="none",ms||5000); }
@@ -1559,7 +1570,10 @@ function parseWorkbook(buf){
     let d=header[c]; if(!(d instanceof Date)) continue;
     const key=iso(new Date(d.getFullYear(),d.getMonth(),d.getDate()+(d.getHours()>=12?1:0)));
     const rec={};
-    for(const k in found){ const v=rows[found[k]][c]; if(typeof v==="number") rec[k]=v; }
+    for(const k in found){ const v=rows[found[k]][c];
+      if(DATE_ROWS.includes(k)){ // 0 (or a 0 shown as a 1900 date) means nothing open
+        if(v===0||(v instanceof Date&&v.getFullYear()<1950)) rec[k]=0; else { const dv=cellIso(v); if(dv) rec[k]=dv; } }
+      else if(typeof v==="number") rec[k]=v; }
     for(const s of ["1","2"]) if(rec["h"+s]==null) delete rec["t"+s];
     if(Object.keys(rec).some(k=>k[0]!=="t" && (!EOS_KEYS.includes(k) || rec[k]>0))) out[key]=rec;
   }
@@ -1629,6 +1643,7 @@ function autoFor(d){
     obWaved:obW, obDz:dz, obStat:st, obCarry:add(obW,dz,st),
     obWavedUnits:obWU, obDzUnits:dzU, obCarryUnits:add(obWU,dzU),
     lives:n(r.ap1), drops:n(r.dr1), loadsFloor:n(r.lf1), palletPP:n(r.pp1), poOpen:total(r,METRICS.po),
+    oldestPO:r.pd1==null?null:r.pd1, oldestWorked:r.wd1==null?null:r.wd1,
     ltcPicked:total(r,METRICS.reach), obSorted:total(r,METRICS.ob), slapped:total(r,METRICS.slap),
     unitsPrev:add(r.u1,r.u2,r.ou1,r.ou2)};
 }
@@ -1714,8 +1729,8 @@ function renderMorning(box,entry){
     const D="&mdash;", n0=x=>x==null||x===""?D:fmt(+x,(+x)%1?1:0);
     const z0=x=>x==null||x===""?"0":fmt(+x,(+x)%1?1:0);   // label slap: blank on WIP Entry reads 0
     const units=x=>x==null?"":`<b>${fmt(x)}</b> units`;
-    const ageOf=iso=>{ if(!iso) return ""; const days=Math.round((parseIso(d)-parseIso(String(iso)))/864e5); return days<=0?"today":days===1?"1 day old":days+" days old"; };
-    const dateVal=iso=>iso?esc(parseIso(String(iso)).toLocaleDateString("en-US",{month:"short",day:"numeric"})):D;
+    const ageOf=iso=>{ if(iso===0) return "Nothing open"; if(!iso) return ""; const days=Math.round((parseIso(d)-parseIso(String(iso)))/864e5); return days<=0?"today":days===1?"1 day old":days+" days old"; };
+    const dateVal=iso=>iso===0?"None":iso?esc(parseIso(String(iso)).toLocaleDateString("en-US",{month:"short",day:"numeric"})):D;
     const kc=(accent,label,value,unit,extra,cls)=>`<div class="kpi${cls?" "+cls:""}" style="--kpi-accent:${accent}"><div class="label">${label}</div>
         <div class="value">${value}${unit?`<span class="unit">${unit}</span>`:""}</div>${extra?`<div class="extra">${extra}</div>`:""}</div>`;
     const notes=(accent,label,pairs)=>{ const rows=pairs.filter(([,x])=>x!=null&&String(x).trim()!==""); return rows.length?`<div class="kpi kpi-notes" style="--kpi-accent:${accent}"><div class="label">${label}</div>
@@ -1738,8 +1753,8 @@ function renderMorning(box,entry){
     kc(IB,"Loads on floor",A.loadsFloor==null?D:fmt(A.loadsFloor),"","To receive / put away"),
     kc(IB,"Pallets PP",A.palletPP==null?D:fmt(A.palletPP)),
     kc(IB,"Open PO issues",A.poOpen==null?D:fmt(A.poOpen)),
-    kc(IB,"Oldest open PO",dateVal(F.oldestPO),"",ageOf(F.oldestPO)),
-    kc(IB,"Oldest date being worked",dateVal(F.oldestWorked),"",ageOf(F.oldestWorked))])}
+    kc(IB,"Oldest open PO",dateVal(A.oldestPO!=null?A.oldestPO:F.oldestPO),"",ageOf(A.oldestPO!=null?A.oldestPO:F.oldestPO)),
+    kc(IB,"Oldest date being worked",dateVal(A.oldestWorked!=null?A.oldestWorked:F.oldestWorked),"",ageOf(A.oldestWorked!=null?A.oldestWorked:F.oldestWorked))])}
   ${head(LT,"LTC")}
   ${grid([
     kc(LT,"Total WIP",cc("ltcTotal"),"reaches",`<span data-c="ltcTotalU">${D}</span> units &middot; <b data-c="ltcDays">${D}</b> days of WIP`),
@@ -1778,8 +1793,6 @@ function renderMorning(box,entry){
       ${inRow("ibLives","Lives","Scheduled appointments")}
       ${inRow("ibDrops","Drops")}
       ${inRow("containers","Containers")}
-      ${inRow("oldestPO","Oldest open PO date","","date")}
-      ${inRow("oldestWorked","Oldest date being worked","","date")}
     </div>
     <div class="am-card" style="--acc:#2fbf71"><h3>LTC</h3>
       <div class="am-pick" style="border-top:none"><div></div><div class="h">1st shift</div><div class="h">2nd shift</div>
