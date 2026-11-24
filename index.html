@@ -338,6 +338,16 @@ body{background-color:#f3f6fd;
 .fl-t th{white-space:normal;vertical-align:bottom;line-height:1.25;min-width:64px;}
 .fl-t tfoot td{font-weight:800;border-top:2px solid var(--text);border-bottom:none;}
 .fl-note{margin:8px 2px 0;font-size:12px;}
+
+/* Allocation tab drill-down */
+.ad-t tr.ad-row{cursor:pointer;}
+.ad-t tr.ad-row:hover td,.ad-t tr.ad-row.open td{background:rgba(43,76,155,.06);}
+.ad-t td.chev{color:var(--text-dim);text-align:right;width:28px;}
+.ad-t tr.ad-detail>td{padding:0 0 10px 18px;background:rgba(43,76,155,.03);}
+.ad-sub{margin:4px 0 0;}
+.ad-sub th{font-size:10px;}
+.ad-sub tr.first td{border-top:1px solid var(--card-border);}
+.ad-sub tr.ad-subt td{font-weight:700;color:var(--text-dim);}
 </style>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -927,33 +937,51 @@ function wirePP(){
     };
   };
 }
-// Allocation tab: unwaved allocation summary by Date Created (from the morning's unwaved report) + oldest allocations.
+// Allocation tab: the old date allocations from the morning's unwaved report (Old Date Allocations tab),
+// by Date Created, each date opening to its DT and TT breakdown; then the oldest allocations typed on WIP Entry.
+let allocOpen={};
 function renderAllocTab(box){
-  const d=current, doc=MORNING[d]||{}, uw=doc.unwaved, F=doc.form||{}, bd=uw&&uw.byDate;
-  const FC="#6f9be0", LT="#2fbf71", AC="#e8a33d", D="&mdash;";
+  const d=current, doc=MORNING[d]||{}, uw=doc.unwaved, F=doc.form||{}, od=uw&&uw.oldDate;
+  const FC="#6f9be0", LT="#2fbf71", AC="#e8a33d";
   const day=x=>parseIso(x).toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"numeric"});
   const age=x=>{ const n=Math.round((parseIso(d)-parseIso(x))/864e5); return n<=0?"today":n===1?"1 day":n+" days"; };
+  const z=v=>v?fmt(v):`<span class="zero">0</span>`;
+  const sum=rs=>rs.reduce((t,r)=>({fr:t.fr+r.fr,fu:t.fu+r.fu,lr:t.lr+r.lr,lu:t.lu+r.lu,n:t.n+(r.n||0)}),{fr:0,fu:0,lr:0,lu:0,n:0});
   let html="";
-  if(!bd){
-    html+=deptHead(AC,"Unwaved allocation summary at start of shift")+`<div class="empty"><h3>No allocation summary for ${shortDate(d)}</h3>
-      <p>${uw&&!uw.legacy?"The unwaved report loaded for this day was loaded before this tab existed. Load it again on WIP Entry.":"Load this morning's unwaved report on WIP Entry to fill this tab."}</p></div>`;
+  if(!od){
+    html+=deptHead(AC,"Old date allocations")+`<div class="empty"><h3>No old date allocations for ${shortDate(d)}</h3>
+      <p>${uw&&!uw.legacy?"The unwaved report for this day was loaded before this view existed, or it has no Old Date Allocations tab. Load it again on WIP Entry.":"Load this morning's unwaved report on WIP Entry to fill this tab."}</p></div>`;
   }else{
-    const dates=Object.keys(bd).sort();
-    const tot=dates.reduce((t,k)=>({fr:t.fr+(bd[k].obReaches||0),fu:t.fu+(bd[k].obUnits||0),lr:t.lr+(bd[k].ltcReaches||0),lu:t.lu+(bd[k].ltcUnits||0)}),{fr:0,fu:0,lr:0,lu:0});
-    html+=deptHead(AC,"Unwaved allocation summary at start of shift")+deptGrid([
-      kpiCard(FC,"FC unwaved",fmt(tot.fr),"reaches",`<b>${fmt(tot.fu)}</b> units`),
-      kpiCard(LT,"LTC unwaved",fmt(tot.lr),"reaches",`<b>${fmt(tot.lu)}</b> units`),
-      kpiCard(AC,"Oldest date created",day(dates[0]),"",`<b>${age(dates[0])}</b> old &middot; ${dates.length} date${dates.length===1?"":"s"} unwaved`)],3);
-    const z=v=>v?fmt(v):`<span class="zero">0</span>`;
+    const rows=od.rows, dates=[...new Set(rows.map(r=>r.d))].sort(), T=sum(rows);
+    html+=deptHead(AC,"Old date allocations","From the Old Date Allocations tab of this morning's unwaved report")+deptGrid([
+      kpiCard(AC,"Oldest date created",day(dates[0]),"",`<b>${age(dates[0])}</b> old &middot; ${dates.length} date${dates.length===1?"":"s"}`),
+      kpiCard(FC,"FC",fmt(T.fr),"reaches",`<b>${fmt(T.fu)}</b> units`),
+      kpiCard(LT,"LTC",fmt(T.lr),"reaches",`<b>${fmt(T.lu)}</b> units`),
+      kpiCard("#a78bfa","Articles",fmt(od.articles),"",`on ${dates.length} old date${dates.length===1?"":"s"}`)],4);
+    const ttSort=(a,b)=>(isNaN(a)||isNaN(b))?String(a).localeCompare(String(b)):(+a)-(+b);
+    const detail=k=>{
+      const rs=rows.filter(r=>r.d===k).sort((a,b)=>a.dt.localeCompare(b.dt)||ttSort(a.tt,b.tt));
+      const dts=[...new Set(rs.map(r=>r.dt))];
+      return `<tr class="ad-detail"><td colspan="8"><table class="sched-t ad-sub">
+        <thead><tr><th>DT</th><th>TT</th><th class="n">FC reaches</th><th class="n">FC units</th><th class="n">LTC reaches</th><th class="n">LTC units</th><th class="n">Articles</th></tr></thead>
+        <tbody>${dts.map(dt=>{ const g=rs.filter(r=>r.dt===dt), s=sum(g);
+          return g.map((r,i)=>`<tr${i===0?' class="first"':""}><td>${i===0?`<b>${esc(dt)}</b>`:""}</td><td>${esc(r.tt)}</td><td class="n">${z(r.fr)}</td><td class="n">${z(r.fu)}</td><td class="n">${z(r.lr)}</td><td class="n">${z(r.lu)}</td><td class="n">${z(r.n)}</td></tr>`).join("")
+            +(g.length>1?`<tr class="ad-subt"><td></td><td>${esc(dt)} total</td><td class="n">${z(s.fr)}</td><td class="n">${z(s.fu)}</td><td class="n">${z(s.lr)}</td><td class="n">${z(s.lu)}</td><td class="n"></td></tr>`:""); }).join("")}</tbody>
+        </table></td></tr>`;
+    };
     html+=`<div class="kpi alloc-sum" style="--kpi-accent:${AC}"><div class="sched-wrap" style="padding:0"><table class="sched-t ad-t">
-      <thead><tr><th>Date Created</th><th>Age</th><th>DT</th><th class="n">Reaches</th><th class="n">Units</th></tr></thead><tbody>
-      ${dates.map(k=>{ const x=bd[k]; return `<tr class="first"><td rowspan="2"><b>${day(k)}</b></td><td rowspan="2">${age(k)}</td><td><span class="dtag fc">FC</span></td><td class="n">${z(x.obReaches)}</td><td class="n">${z(x.obUnits)}</td></tr>
-        <tr><td><span class="dtag ltc">LTC</span></td><td class="n">${z(x.ltcReaches)}</td><td class="n">${z(x.ltcUnits)}</td></tr>`; }).join("")}
-      </tbody><tfoot><tr><td colspan="2">Total</td><td><span class="dtag fc">FC</span></td><td class="n">${fmt(tot.fr)}</td><td class="n">${fmt(tot.fu)}</td></tr>
-        <tr><td colspan="2"></td><td><span class="dtag ltc">LTC</span></td><td class="n">${fmt(tot.lr)}</td><td class="n">${fmt(tot.lu)}</td></tr></tfoot></table></div>
-      <p class="modal-note" style="margin:10px 0 0">FC = FC reaches for every DT except NCV. LTC = LTC reaches + NCV FC reaches.${uw.file?` From ${esc(uw.file)}.`:""}</p></div>`;
+      <thead><tr><th>Date Created</th><th>Age</th><th class="n">FC reaches</th><th class="n">FC units</th><th class="n">LTC reaches</th><th class="n">LTC units</th><th class="n">Articles</th><th></th></tr></thead><tbody>
+      ${dates.map(k=>{ const x=sum(rows.filter(r=>r.d===k)), open=!!allocOpen[k];
+        if(od.dateArticles&&od.dateArticles[k]!=null) x.n=od.dateArticles[k];
+        return `<tr class="ad-row${open?" open":""}" data-ad="${k}" tabindex="0" role="button" aria-expanded="${open}"><td><b>${day(k)}</b></td><td>${age(k)}</td>
+          <td class="n">${z(x.fr)}</td><td class="n">${z(x.fu)}</td><td class="n">${z(x.lr)}</td><td class="n">${z(x.lu)}</td><td class="n">${z(x.n)}</td>
+          <td class="chev">${open?"&#9650;":"&#9660;"}</td></tr>${open?detail(k):""}`; }).join("")}
+      </tbody><tfoot><tr><td colspan="2">Total</td><td class="n">${fmt(T.fr)}</td><td class="n">${fmt(T.fu)}</td><td class="n">${fmt(T.lr)}</td><td class="n">${fmt(T.lu)}</td><td class="n">${fmt(od.articles)}</td><td></td></tr></tfoot></table></div>
+      <p class="modal-note" style="margin:10px 0 0">Tap a date to see it by DT and TT. FC = FC reaches for every DT except NCV. LTC = LTC reaches + NCV FC reaches.${od.hasTT?"":" This report's Old Date Allocations tab has no TT column, so TT shows as —."}${uw.file?` From ${esc(uw.file)}.`:""}</p></div>`;
   }
   box.innerHTML=html+allocSection(F,d);
+  box.querySelectorAll("[data-ad]").forEach(tr=>{ const go=()=>{ allocOpen[tr.dataset.ad]=!allocOpen[tr.dataset.ad]; render(); };
+    tr.onclick=go; tr.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } }; });
 }
 // Oldest allocation: blank on WIP Entry reads 0.
 function allocSection(F,d){
@@ -1942,6 +1970,40 @@ function parseAllocByDate(wb){
   }
   return byDateOut(m);
 }
+// "Old Date Allocations" pivot: DateCreated / TT / DT / Article with the four sums. Pivot labels only show on the
+// first row of each group, so they are carried down. Kept per date + DT + TT, with how many articles.
+function parseOldDate(wb){
+  const name=wb.SheetNames.find(n=>/^old\s*date\s*allocations?$/i.test(n.trim())); if(!name) return null;
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:null});
+  const low=c=>String(c??"").trim().toLowerCase();
+  const hr=rows.findIndex(r=>r&&r.some(c=>low(c)==="datecreated")&&r.some(c=>low(c)==="dt")&&r.some(c=>low(c)==="sum of fcreaches"));
+  if(hr<0) return null;
+  const h=rows[hr].map(low), ix=k=>h.indexOf(k);
+  const c={d:ix("datecreated"),tt:ix("tt"),dt:ix("dt"),a:ix("article"),fr:ix("sum of fcreaches"),fu:ix("sum of fcunits"),lr:ix("sum of ltcreaches"),lu:ix("sum of ltcunits")};
+  if([c.d,c.dt,c.fr,c.fu,c.lr,c.lu].some(i=>i<0)) return null;
+  const txt=i=>i<0?"":String(rows[cur][i]??"").trim();
+  const m={}, arts=new Set(), perDate={}; let d=null, tt="", dt="", art="", cur=0;
+  for(cur=hr+1;cur<rows.length;cur++){
+    const r=rows[cur]; if(!r) continue;
+    const labels=[c.d,c.tt,c.dt,c.a].filter(i=>i>=0).map(i=>String(r[i]??""));
+    if(labels.some(x=>/grand total/i.test(x))) break;
+    if(labels.some(x=>/\btotal\b/i.test(x))) continue;          // pivot subtotal rows
+    const nd=xlIso(r[c.d]); if(nd){ d=nd; tt=""; dt=""; art=""; }
+    if(txt(c.tt)){ tt=txt(c.tt); dt=""; }
+    if(txt(c.dt)){ dt=txt(c.dt).toUpperCase(); art=""; }
+    if(txt(c.a)) art=txt(c.a);
+    if(!d||!dt) continue;
+    const fr=cellNum(r[c.fr]), fu=cellNum(r[c.fu]), lr=cellNum(r[c.lr]), lu=cellNum(r[c.lu]);
+    if(!(fr||fu||lr||lu)) continue;
+    const k=d+"|"+dt+"|"+(tt||"\u2014"), g=m[k]=m[k]||{d,dt,tt:tt||"\u2014",fr:0,fu:0,lr:0,lu:0,a:new Set()};
+    // FC = FC reaches for every DT except NCV; LTC = LTC reaches + NCV FC reaches.
+    if(dt==="NCV"){ g.lr+=fr+lr; g.lu+=fu+lu; } else { g.fr+=fr; g.fu+=fu; g.lr+=lr; g.lu+=lu; }
+    if(art){ g.a.add(art); arts.add(art); (perDate[d]=perDate[d]||new Set()).add(art); }
+  }
+  const list=Object.values(m).map(g=>({d:g.d,dt:g.dt,tt:g.tt,fr:g.fr,fu:g.fu,lr:g.lr,lu:g.lu,n:g.a.size}));
+  const dateArticles={}; for(const k in perDate) dateArticles[k]=perDate[k].size;
+  return list.length?{rows:list, articles:arts.size, dateArticles, hasTT:c.tt>=0}:null;
+}
 function uwSplit(t){ return {ltcReaches:t.lr+t.nr, ltcUnits:t.lu+t.nu, obReaches:t.fr-t.nr, obUnits:t.fu-t.nu}; }
 function uwAdd(t,dt,fr,fu,lr,lu){ t.fr+=fr; t.fu+=fu; t.lr+=lr; t.lu+=lu; if(dt==="NCV"){ t.nr+=fr; t.nu+=fu; } }
 const uwZero=()=>({fr:0,fu:0,lr:0,lu:0,nr:0,nu:0});
@@ -1967,7 +2029,7 @@ function parseUnwaved(wb){
       if(dc) uwAdd(bd[dc]=bd[dc]||uwZero(),dt,g("FCReaches"),g("FCUnits"),g("LTCReaches"),g("LTCUnits"));
     }
     if(!n) throw new Error("The report has no detail rows.");
-    return {...uwSplit(all), rows:n, tt90:ix("TT")>=0?uwSplit(t90):null, tt85:ix("TT")>=0?uwSplit(t85):null, byDate:byDateOut(bd)||parseAllocByDate(wb), from:name};
+    return {...uwSplit(all), rows:n, tt90:ix("TT")>=0?uwSplit(t90):null, tt85:ix("TT")>=0?uwSplit(t85):null, byDate:byDateOut(bd)||parseAllocByDate(wb), oldDate:parseOldDate(wb), from:name};
   }
   // 2) only the pivot ("Pivot Table"): DT is filled in on the first row of each group
   for(const name of wb.SheetNames){
@@ -1990,7 +2052,7 @@ function parseUnwaved(wb){
       if(tt==="85") uwAdd(t85,dt,cellNum(r[c.fr]),cellNum(r[c.fu]),cellNum(r[c.lr]),cellNum(r[c.lu]));
     }
     if(!n) continue;
-    return {...uwSplit(all), rows:n, tt90:uwSplit(t90), tt85:uwSplit(t85), byDate:parseAllocByDate(wb), from:name};
+    return {...uwSplit(all), rows:n, tt90:uwSplit(t90), tt85:uwSplit(t85), byDate:parseAllocByDate(wb), oldDate:parseOldDate(wb), from:name};
   }
   throw new Error("Couldn't find the unwaved detail columns (DT, TT, FCReaches, FCUnits, LTCReaches, LTCUnits) or the pivot table.");
 }
