@@ -985,19 +985,21 @@ function schedSection(d,F){
   };
   const row=l=>`<tr class="${!done(l)&&l.exp<today?"late":""}"><td>${esc(day(l.exp))}</td><td>${esc(l.rts||"—")}</td><td>${esc(l.load||"—")}</td>${l.kind==="BBWD"?`<td>${esc(l.store||"?")}</td>`:l.kind==="OTHER"?`<td>${esc(l.note||"—")}</td>`:""}<td>${esc(l.carrier||"—")}</td><td class="dep">${pill(l)}</td></tr>`;
   const card=(kind,typed)=>{
-    const ls=all.filter(l=>l.kind===kind), wkN=ls.filter(l=>l.exp<=we).length, open=ls.filter(l=>!done(l)).length;
+    // Every card looks two weeks out: this week and next week.
+    const two=true, end2=addDays(wk,13);
+    const ls=all.filter(l=>l.kind===kind&&(!two||l.exp<=end2)), wkN=ls.filter(l=>l.exp<=we).length, open=ls.filter(l=>!done(l)).length;
     const head=`<button type="button" class="sched-head" data-open="${kind}" aria-expanded="${schedOpen[kind]}">
         <span class="label">${SCHED_NAME[kind]}</span>
         <span class="value">${SCHED?ls.length:"—"}<span class="unit">scheduled</span></span>
-        <span class="extra">${SCHED?`<b>${wkN}</b> this week &middot; <b>${ls.length-wkN}</b> later &middot; <b>${open}</b> not departed`:"Load the outbound schedule on WIP Entry"}${typed&&String(typed).trim()?`<br>Note: <b>${esc(typed)}</b>`:""}</span>
+        <span class="extra">${SCHED?`<b>${wkN}</b> this week &middot; <b>${ls.length-wkN}</b> ${two?"next week":"later"} &middot; <b>${open}</b> not departed`:"Load the outbound schedule on WIP Entry"}${typed&&String(typed).trim()?`<br>Note: <b>${esc(typed)}</b>`:""}</span>
         <span class="chev" aria-hidden="true">${schedOpen[kind]?"&#9650;":"&#9660;"}</span></button>`;
     const body=schedOpen[kind]&&SCHED?(ls.length?`<div class="sched-wrap"><table class="sched-t"><thead><tr><th>Depart</th><th>RTS #</th><th>Load #</th>${kind==="BBWD"?"<th>Store</th>":kind==="OTHER"?"<th>Type</th>":""}<th>Carrier</th><th>Departed</th></tr></thead>
-        <tbody>${ls.map(row).join("")}</tbody></table></div>`:`<p class="modal-note">Nothing scheduled from this week on.</p>`):"";
+        <tbody>${ls.map(row).join("")}</tbody></table></div>`:`<p class="modal-note">Nothing scheduled ${two?"this week or next week":"from this week on"}.</p>`):"";
     return `<div class="kpi sched${schedOpen[kind]?" open":""}" style="--kpi-accent:${SL}">${head}${body}</div>`;
   };
   const text=(label,v)=>`<div class="kpi kpi-notes" style="--kpi-accent:${SL}"><div class="label">${label}</div>
       <div class="note-row"><b style="text-align:left;font-weight:600">${v&&String(v).trim()?esc(v):"—"}</b></div></div>`;
-  return `<h3 class="dept-h" style="--dept:${SL}">Scheduled loads<small>From the week of ${esc(shortDate(wk))} on</small></h3>
+  return `<h3 class="dept-h" style="--dept:${SL}">Scheduled loads<small>This week and next week (${esc(shortDate(wk))} \u2013 ${esc(shortDate(addDays(wk,13)))})</small></h3>
     <section class="kpi-grid three dept-grid sched-grid" style="--cols:2">${card("SB2")}${card("BBWD")}${text("BIA",F.bia)}${card("OTHER",F.nonDa)}</section>`;
 }
 function wireSched(box){
@@ -2072,8 +2074,8 @@ async function loadScheduleFile(f){
     const changes={"schedule/file":f.name,"schedule/loadedAt":new Date().toISOString(),"schedule/loadedBy":fbUser.name};
     for(const l of loads){ const {key,...rec}=l; changes["schedule/loads/"+key]=JSON.parse(JSON.stringify(rec)); }
     await FB.update(changes);
-    const wk=weekStart(iso(new Date())), n=loads.filter(l=>!l.cancelled&&l.exp>=wk).length;
-    toast(`Outbound schedule loaded: ${n} scheduled load${n===1?"":"s"} (SB2, BBWD and other non-DA) from this week on.`,8000);
+    const wk=weekStart(iso(new Date())), n=loads.filter(l=>!l.cancelled&&l.exp>=wk&&l.exp<=addDays(wk,13)).length;
+    toast(`Outbound schedule loaded: ${n} scheduled load${n===1?"":"s"} (SB2, BBWD and other non-DA) this week and next week.`,8000);
   }catch(err){ toast("Couldn't load "+f.name+". "+err.message,12000); }
 }
 document.getElementById("schedIn").addEventListener("change",async e=>{ const f=e.target.files[0]; e.target.value=""; if(f) await loadScheduleFile(f); });
