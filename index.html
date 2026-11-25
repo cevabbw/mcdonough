@@ -955,16 +955,14 @@ function renderAllocTab(box){
   const age=x=>{ const n=Math.round((parseIso(d)-parseIso(x))/864e5); return n<=0?"today":n===1?"1 day":n+" days"; };
   const z=v=>v?fmt(v):`<span class="zero">0</span>`;
   const sum=rs=>rs.reduce((t,r)=>({fr:t.fr+r.fr,fu:t.fu+r.fu,lr:t.lr+r.lr,lu:t.lu+r.lu,n:t.n+(r.n||0)}),{fr:0,fu:0,lr:0,lu:0,n:0});
-  // TT 85, TT 90, then PWP (TT 50 + TT 55, only when the report has any) from the morning's unwaved report.
+  // TT 85 and TT 90 from the morning's unwaved report.
   const units=x=>x==null?"":`<b>${fmt(x)}</b> units`;
   const ttSec=(color,title,t,missing)=>deptHead(color,title)+deptGrid(t
     ?[kpiCard(color,"LTC",fmt(t.ltcReaches),"reaches",units(t.ltcUnits)),kpiCard(color,"Outbound",fmt(t.obReaches),"reaches",units(t.obUnits)),
       kpiCard(color,"Total",fmt(t.ltcReaches+t.obReaches),"reaches",units(t.ltcUnits+t.obUnits))]
     :[kpiCard(color,"LTC","&mdash;","",missing),kpiCard(color,"Outbound","&mdash;","",""),kpiCard(color,"Total","&mdash;","","")],3);
   const miss=k=>uw&&!uw.legacy?"Load the report again to add TT "+k:"Unwaved report not loaded";
-  let html=ttSec("#e8a33d","TT 85 unwaved",uw&&uw.tt85,miss("85"))+ttSec("#e2231a","TT 90 unwaved",uw&&uw.tt90,miss("90"))
-    +(uw&&uw.pwp?deptHead("#a78bfa","PWP unwaved<small>TT 50 and TT 55</small>")
-      +deptGrid([kpiCard("#a78bfa","Total",fmt(uw.pwp.ltcReaches+uw.pwp.obReaches),"reaches",units(uw.pwp.ltcUnits+uw.pwp.obUnits))],3):"");
+  let html=ttSec("#e8a33d","TT 85 unwaved",uw&&uw.tt85,miss("85"))+ttSec("#e2231a","TT 90 unwaved",uw&&uw.tt90,miss("90"));
   if(!od){
     html+=deptHead(AC,"Old date allocations")+`<div class="empty"><h3>No old date allocations for ${shortDate(d)}</h3>
       <p>${uw&&!uw.legacy?"The unwaved report for this day was loaded before this view existed, or it has no Old Date Allocations tab. Load it again on WIP Entry.":"Load this morning's unwaved report on WIP Entry to fill this tab."}</p></div>`;
@@ -1729,9 +1727,15 @@ function formFor(d){
 }
 // The summary shows what's saved; the entry tab shows the draft being typed.
 function AF(){ return amView?((MORNING[current]&&MORNING[current].form)||{}):amForm; }
+// Unwaved shown on the dashboard leaves out PWP (TT 50 and TT 55), which has its own card.
+// The report is saved as loaded; this only changes what is displayed and added into Total WIP.
+function uwNet(x){
+  if(!x||!x.pwp) return x; const p=x.pwp, m=(a,b)=>a==null?a:a-(b||0);
+  return {...x, ltcReaches:m(x.ltcReaches,p.ltcReaches), ltcUnits:m(x.ltcUnits,p.ltcUnits), obReaches:m(x.obReaches,p.obReaches), obUnits:m(x.obUnits,p.obUnits)};
+}
 function curUW(d){
-  if(!amView&&amUW[d]) return amUW[d];
-  const s=MORNING[d]; if(s&&s.unwaved) return s.unwaved;
+  if(!amView&&amUW[d]) return uwNet(amUW[d]);
+  const s=MORNING[d]; if(s&&s.unwaved) return uwNet(s.unwaved);
   const f=(!amView&&amDrafts[d])||(s&&s.form)||{};
   return (num(f.ltcUnwaved)!=null||num(f.obUnwaved)!=null)?{ltcReaches:num(f.ltcUnwaved),obReaches:num(f.obUnwaved),legacy:true}:null;
 }
@@ -1823,14 +1827,15 @@ function renderMorning(box,entry){
     kc(LT,"Total WIP",cc("ltcTotal"),"reaches",`<span data-c="ltcTotalU">${D}</span> units &middot; <b data-c="ltcDays">${D}</b> days of WIP`),
     kc(LT,"Goal today",cc("ltcGoal"),"reaches",`1st <b data-c="ltcGoal1">${D}</b> &middot; 2nd <b data-c="ltcGoal2">${D}</b>`),
     kc(LT,"Reaches waved @ EOS",A.ltcCarry==null?D:fmt(A.ltcCarry),"",[units(A.ltcCarryUnits),a?sh(a.ltcShift):""].filter(Boolean).join(" &middot; ")),
-    kc(LT,"Unwaved",uw&&uw.ltcReaches!=null?fmt(uw.ltcReaches):D,"",uw?units(uw.ltcUnits):"Unwaved report not loaded"),
+    kc(LT,"Unwaved",uw&&uw.ltcReaches!=null?fmt(uw.ltcReaches):D,"",uw?units(uw.ltcUnits)+(uw.pwp&&uw.pwp.ltcReaches?" &middot; not counting PWP":""):"Unwaved report not loaded"),
     kc(LT,"Pickers",pickers,"",pick)])}
   ${head(OB,"Outbound")}
   ${grid([
     kc(OB,"Total WIP",cc("obTotal"),"reaches",`<span data-c="obTotalU">${D}</span> units &middot; <b data-c="obDays">${D}</b> days of WIP`),
     kc(OB,"Capacity today",cc("obCap"),"cartons",`Sorter <b data-c="sorterCap">${D}</b> &middot; label slap <b data-c="lsCap">${D}</b>`),
     kc(OB,"Carryover to pick",A.obCarry==null?D:fmt(A.obCarry),"",`Waved <b>${A.obWaved==null?D:fmt(A.obWaved)}</b> &middot; DZ <b>${A.obDz==null?D:fmt(A.obDz)}</b> &middot; Stat 30 <b>${A.obStat==null?D:fmt(A.obStat)}</b>`),
-    kc(OB,"Unwaved",uw&&uw.obReaches!=null?fmt(uw.obReaches):D,"",uw?units(uw.obUnits):"Unwaved report not loaded"),
+    kc(OB,"Unwaved",uw&&uw.obReaches!=null?fmt(uw.obReaches):D,"",uw?units(uw.obUnits)+(uw.pwp?" &middot; not counting PWP":""):"Unwaved report not loaded"),
+    ...(uw&&uw.pwp?[kc("#a78bfa","PWP unwaved",fmt(uw.pwp.ltcReaches+uw.pwp.obReaches),"reaches",units(uw.pwp.ltcUnits+uw.pwp.obUnits)+" &middot; not in Total WIP")]:[]),
     kc(OB,"Cartons to label slap",z0(F.lsCartons),"",`<b>${z0(F.lsTeams)}</b> teams &times; <b>${z0(F.lsHours)}</b> hrs &middot; loads ready <b>${z0(F.lsLoadsReady)}</b>`),
     notes(OB,"Load concerns",[["",F.lsConcerns]])])}
   ${schedSection(d,F)}`;
