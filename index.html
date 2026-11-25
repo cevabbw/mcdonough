@@ -342,10 +342,18 @@ body{background-color:#f3f6fd;
 /* Allocation tab drill-down */
 .ad-t tr.ad-row{cursor:pointer;}
 .ad-t tr.ad-row:hover td,.ad-t tr.ad-row.open td{background:rgba(43,76,155,.06);}
-.ad-t td.chev{color:var(--text-dim);text-align:right;width:28px;}
+.ad-t td.chev{color:#2b4c9b;font-weight:700;text-align:right;white-space:nowrap;width:60px;}
+.ad-modal{max-width:860px;max-height:calc(100vh - 40px);overflow:auto;margin-top:20px;}
+.ad-modal .modal-head h3 small{font-weight:600;color:var(--text-dim);font-size:13px;margin-left:6px;}
+.ad-chips{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 12px;}
+.ad-chips>div{background:rgba(43,76,155,.06);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text-dim);}
+.ad-chips span{display:block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;}
+.ad-chips b{color:var(--text);font-size:16px;}
 .ad-t tr.ad-detail>td{padding:0 0 10px 18px;background:rgba(43,76,155,.03);}
 .ad-sub{margin:4px 0 0;}
 .ad-sub th{font-size:10px;}
+.ad-sub th.n,.ad-sub td.n{text-align:right;}
+.ad-sub th,.ad-sub td{white-space:nowrap;}
 .ad-sub tr.first td{border-top:1px solid var(--card-border);}
 .ad-sub tr.ad-subt td{font-weight:700;color:var(--text-dim);}
 </style>
@@ -939,7 +947,7 @@ function wirePP(){
 }
 // Allocation tab: the old date allocations from the morning's unwaved report (Old Date Allocations tab),
 // by Date Created, each date opening to its DT and TT breakdown; then the oldest allocations typed on WIP Entry.
-let allocOpen={};
+let allocPop=null;
 function renderAllocTab(box){
   const d=current, doc=MORNING[d]||{}, uw=doc.unwaved, F=doc.form||{}, od=uw&&uw.oldDate;
   const FC="#6f9be0", LT="#2fbf71", AC="#e8a33d";
@@ -947,7 +955,16 @@ function renderAllocTab(box){
   const age=x=>{ const n=Math.round((parseIso(d)-parseIso(x))/864e5); return n<=0?"today":n===1?"1 day":n+" days"; };
   const z=v=>v?fmt(v):`<span class="zero">0</span>`;
   const sum=rs=>rs.reduce((t,r)=>({fr:t.fr+r.fr,fu:t.fu+r.fu,lr:t.lr+r.lr,lu:t.lu+r.lu,n:t.n+(r.n||0)}),{fr:0,fu:0,lr:0,lu:0,n:0});
-  let html="";
+  // TT 85, TT 90, then PWP (TT 50 + TT 55, only when the report has any) from the morning's unwaved report.
+  const units=x=>x==null?"":`<b>${fmt(x)}</b> units`;
+  const ttSec=(color,title,t,missing)=>deptHead(color,title)+deptGrid(t
+    ?[kpiCard(color,"LTC",fmt(t.ltcReaches),"reaches",units(t.ltcUnits)),kpiCard(color,"Outbound",fmt(t.obReaches),"reaches",units(t.obUnits)),
+      kpiCard(color,"Total",fmt(t.ltcReaches+t.obReaches),"reaches",units(t.ltcUnits+t.obUnits))]
+    :[kpiCard(color,"LTC","&mdash;","",missing),kpiCard(color,"Outbound","&mdash;","",""),kpiCard(color,"Total","&mdash;","","")],3);
+  const miss=k=>uw&&!uw.legacy?"Load the report again to add TT "+k:"Unwaved report not loaded";
+  let html=ttSec("#e8a33d","TT 85 unwaved",uw&&uw.tt85,miss("85"))+ttSec("#e2231a","TT 90 unwaved",uw&&uw.tt90,miss("90"))
+    +(uw&&uw.pwp?deptHead("#a78bfa","PWP unwaved<small>TT 50 and TT 55</small>")
+      +deptGrid([kpiCard("#a78bfa","Total",fmt(uw.pwp.ltcReaches+uw.pwp.obReaches),"reaches",units(uw.pwp.ltcUnits+uw.pwp.obUnits))],3):"");
   if(!od){
     html+=deptHead(AC,"Old date allocations")+`<div class="empty"><h3>No old date allocations for ${shortDate(d)}</h3>
       <p>${uw&&!uw.legacy?"The unwaved report for this day was loaded before this view existed, or it has no Old Date Allocations tab. Load it again on WIP Entry.":"Load this morning's unwaved report on WIP Entry to fill this tab."}</p></div>`;
@@ -958,29 +975,45 @@ function renderAllocTab(box){
       kpiCard(FC,"FC",fmt(T.fr),"reaches",`<b>${fmt(T.fu)}</b> units`),
       kpiCard(LT,"LTC",fmt(T.lr),"reaches",`<b>${fmt(T.lu)}</b> units`),
       kpiCard("#a78bfa","Articles",fmt(od.articles),"",`on ${dates.length} old date${dates.length===1?"":"s"}`)],4);
+    const dayTot=k=>{ const x=sum(rows.filter(r=>r.d===k)); if(od.dateArticles&&od.dateArticles[k]!=null) x.n=od.dateArticles[k]; return x; };
+    allocPop=k=>{
+      const x=dayTot(k), m=document.createElement("div"), back=document.activeElement;
+      m.className="modal-back"; m.id="adModal";
+      m.innerHTML=`<div class="modal ad-modal" role="dialog" aria-modal="true" aria-labelledby="adTitle">
+        <div class="modal-head"><h3 id="adTitle">Date Created ${day(k)} <small>${age(k)} old</small></h3><button type="button" class="close" aria-label="Close">&times;</button></div>
+        <div class="ad-chips"><div><span>FC</span><b>${fmt(x.fr)}</b> reaches &middot; ${fmt(x.fu)} units</div>
+          <div><span>LTC</span><b>${fmt(x.lr)}</b> reaches &middot; ${fmt(x.lu)} units</div><div><span>Articles</span><b>${fmt(x.n)}</b></div></div>
+        ${detail(k)}
+        <p class="modal-note" style="margin:10px 0 0">FC = FC reaches for every DT except NCV. LTC = LTC reaches + NCV FC reaches.</p></div>`;
+      const close=()=>{ m.remove(); document.removeEventListener("keydown",esc_); if(back&&back.focus) back.focus(); };
+      const esc_=e=>{ if(e.key==="Escape") close(); };
+      m.onclick=e=>{ if(e.target===m) close(); };
+      m.querySelector(".close").onclick=close;
+      document.addEventListener("keydown",esc_);
+      document.body.appendChild(m); m.querySelector(".close").focus();
+    };
     const ttSort=(a,b)=>(isNaN(a)||isNaN(b))?String(a).localeCompare(String(b)):(+a)-(+b);
     const detail=k=>{
       const rs=rows.filter(r=>r.d===k).sort((a,b)=>a.dt.localeCompare(b.dt)||ttSort(a.tt,b.tt));
       const dts=[...new Set(rs.map(r=>r.dt))];
-      return `<tr class="ad-detail"><td colspan="8"><table class="sched-t ad-sub">
+      return `<div class="sched-wrap" style="padding:0"><table class="sched-t ad-sub">
         <thead><tr><th>DT</th><th>TT</th><th class="n">FC reaches</th><th class="n">FC units</th><th class="n">LTC reaches</th><th class="n">LTC units</th><th class="n">Articles</th></tr></thead>
         <tbody>${dts.map(dt=>{ const g=rs.filter(r=>r.dt===dt), s=sum(g);
           return g.map((r,i)=>`<tr${i===0?' class="first"':""}><td>${i===0?`<b>${esc(dt)}</b>`:""}</td><td>${esc(r.tt)}</td><td class="n">${z(r.fr)}</td><td class="n">${z(r.fu)}</td><td class="n">${z(r.lr)}</td><td class="n">${z(r.lu)}</td><td class="n">${z(r.n)}</td></tr>`).join("")
             +(g.length>1?`<tr class="ad-subt"><td></td><td>${esc(dt)} total</td><td class="n">${z(s.fr)}</td><td class="n">${z(s.fu)}</td><td class="n">${z(s.lr)}</td><td class="n">${z(s.lu)}</td><td class="n"></td></tr>`:""); }).join("")}</tbody>
-        </table></td></tr>`;
+        </table></div>`;
     };
     html+=`<div class="kpi alloc-sum" style="--kpi-accent:${AC}"><div class="sched-wrap" style="padding:0"><table class="sched-t ad-t">
       <thead><tr><th>Date Created</th><th>Age</th><th class="n">FC reaches</th><th class="n">FC units</th><th class="n">LTC reaches</th><th class="n">LTC units</th><th class="n">Articles</th><th></th></tr></thead><tbody>
-      ${dates.map(k=>{ const x=sum(rows.filter(r=>r.d===k)), open=!!allocOpen[k];
-        if(od.dateArticles&&od.dateArticles[k]!=null) x.n=od.dateArticles[k];
-        return `<tr class="ad-row${open?" open":""}" data-ad="${k}" tabindex="0" role="button" aria-expanded="${open}"><td><b>${day(k)}</b></td><td>${age(k)}</td>
+      ${dates.map(k=>{ const x=dayTot(k);
+        return `<tr class="ad-row" data-ad="${k}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="Open ${day(k)} by DT and TT"><td><b>${day(k)}</b></td><td>${age(k)}</td>
           <td class="n">${z(x.fr)}</td><td class="n">${z(x.fu)}</td><td class="n">${z(x.lr)}</td><td class="n">${z(x.lu)}</td><td class="n">${z(x.n)}</td>
-          <td class="chev">${open?"&#9650;":"&#9660;"}</td></tr>${open?detail(k):""}`; }).join("")}
+          <td class="chev">View &rsaquo;</td></tr>`; }).join("")}
       </tbody><tfoot><tr><td colspan="2">Total</td><td class="n">${fmt(T.fr)}</td><td class="n">${fmt(T.fu)}</td><td class="n">${fmt(T.lr)}</td><td class="n">${fmt(T.lu)}</td><td class="n">${fmt(od.articles)}</td><td></td></tr></tfoot></table></div>
-      <p class="modal-note" style="margin:10px 0 0">Tap a date to see it by DT and TT. FC = FC reaches for every DT except NCV. LTC = LTC reaches + NCV FC reaches.${od.hasTT?"":" This report's Old Date Allocations tab has no TT column, so TT shows as —."}${uw.file?` From ${esc(uw.file)}.`:""}</p></div>`;
+      <p class="modal-note" style="margin:10px 0 0">Tap a date to open it by DT and TT. FC = FC reaches for every DT except NCV. LTC = LTC reaches + NCV FC reaches.${od.hasTT?"":" This report's Old Date Allocations tab has no TT column, so TT shows as —."}${uw.file?` From ${esc(uw.file)}.`:""}</p></div>`;
   }
   box.innerHTML=html+allocSection(F,d);
-  box.querySelectorAll("[data-ad]").forEach(tr=>{ const go=()=>{ allocOpen[tr.dataset.ad]=!allocOpen[tr.dataset.ad]; render(); };
+  box.querySelectorAll("[data-ad]").forEach(tr=>{ const go=()=>allocPop&&allocPop(tr.dataset.ad);
     tr.onclick=go; tr.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } }; });
 }
 // Oldest allocation: blank on WIP Entry reads 0.
@@ -1800,10 +1833,6 @@ function renderMorning(box,entry){
     kc(OB,"Unwaved",uw&&uw.obReaches!=null?fmt(uw.obReaches):D,"",uw?units(uw.obUnits):"Unwaved report not loaded"),
     kc(OB,"Cartons to label slap",z0(F.lsCartons),"",`<b>${z0(F.lsTeams)}</b> teams &times; <b>${z0(F.lsHours)}</b> hrs &middot; loads ready <b>${z0(F.lsLoadsReady)}</b>`),
     notes(OB,"Load concerns",[["",F.lsConcerns]])])}
-  ${head(T85,"TT 85 unwaved")}
-  ${grid([kc(T85,"LTC",l85[0],"reaches",l85[1]), kc(T85,"Outbound",o85[0],"reaches",o85[1]), kc(T85,"Total",ttSum("85")[0],"reaches",ttSum("85")[1])],3)}
-  ${head(T90,"TT 90 unwaved")}
-  ${grid([kc(T90,"LTC",l90[0],"reaches",l90[1]), kc(T90,"Outbound",o90[0],"reaches",o90[1]), kc(T90,"Total",ttSum("90")[0],"reaches",ttSum("90")[1])],3)}
   ${schedSection(d,F)}`;
     wireSched(box);
     updateComputed();
@@ -2016,7 +2045,7 @@ function parseUnwaved(wb){
     if(hr<0) continue;
     const h=rows[hr].map(c=>String(c??"").trim()), ix=k=>h.indexOf(k);
     if(["FCReaches","FCUnits","LTCReaches","LTCUnits"].some(k=>ix(k)<0)) continue;
-    const all=uwZero(), t90=uwZero(), t85=uwZero(), bd={}; let n=0;
+    const all=uwZero(), t90=uwZero(), t85=uwZero(), pwp=uwZero(), bd={}; let n=0, nP=0;
     for(let i=hr+1;i<rows.length;i++){
       const r=rows[i]; if(!r) continue;
       const dt=String(r[ix("DT")]??"").trim().toUpperCase(); if(!dt) continue; // skips the typed-in totals row
@@ -2025,11 +2054,12 @@ function parseUnwaved(wb){
       const tt=ix("TT")>=0?String(r[ix("TT")]??"").trim():"";
       if(tt==="90") uwAdd(t90,dt,g("FCReaches"),g("FCUnits"),g("LTCReaches"),g("LTCUnits"));
       if(tt==="85") uwAdd(t85,dt,g("FCReaches"),g("FCUnits"),g("LTCReaches"),g("LTCUnits"));
+      if(tt==="50"||tt==="55"){ nP++; uwAdd(pwp,dt,g("FCReaches"),g("FCUnits"),g("LTCReaches"),g("LTCUnits")); }
       const dc=ix("DateCreated")>=0?xlIso(r[ix("DateCreated")]):null;
       if(dc) uwAdd(bd[dc]=bd[dc]||uwZero(),dt,g("FCReaches"),g("FCUnits"),g("LTCReaches"),g("LTCUnits"));
     }
     if(!n) throw new Error("The report has no detail rows.");
-    return {...uwSplit(all), rows:n, tt90:ix("TT")>=0?uwSplit(t90):null, tt85:ix("TT")>=0?uwSplit(t85):null, byDate:byDateOut(bd)||parseAllocByDate(wb), oldDate:parseOldDate(wb), from:name};
+    return {...uwSplit(all), rows:n, tt90:ix("TT")>=0?uwSplit(t90):null, tt85:ix("TT")>=0?uwSplit(t85):null, pwp:nP?uwSplit(pwp):null, byDate:byDateOut(bd)||parseAllocByDate(wb), oldDate:parseOldDate(wb), from:name};
   }
   // 2) only the pivot ("Pivot Table"): DT is filled in on the first row of each group
   for(const name of wb.SheetNames){
@@ -2040,7 +2070,7 @@ function parseUnwaved(wb){
     const h=rows[hr].map(low), ix=k=>h.indexOf(k);
     const c={dt:ix("dt"),tt:ix("tt"),fr:ix("sum of fcreaches"),fu:ix("sum of fcunits"),lr:ix("sum of ltcreaches"),lu:ix("sum of ltcunits")};
     if(Object.values(c).some(i=>i<0)) continue;
-    const all=uwZero(), t90=uwZero(), t85=uwZero(); let dt="", n=0;
+    const all=uwZero(), t90=uwZero(), t85=uwZero(), pwp=uwZero(); let dt="", n=0, nP=0;
     for(let i=hr+1;i<rows.length;i++){
       const r=rows[i]; if(!r) continue;
       const first=String(r[c.dt]??"").trim();
@@ -2050,9 +2080,10 @@ function parseUnwaved(wb){
       n++; uwAdd(all,dt,cellNum(r[c.fr]),cellNum(r[c.fu]),cellNum(r[c.lr]),cellNum(r[c.lu]));
       if(tt==="90") uwAdd(t90,dt,cellNum(r[c.fr]),cellNum(r[c.fu]),cellNum(r[c.lr]),cellNum(r[c.lu]));
       if(tt==="85") uwAdd(t85,dt,cellNum(r[c.fr]),cellNum(r[c.fu]),cellNum(r[c.lr]),cellNum(r[c.lu]));
+      if(tt==="50"||tt==="55"){ nP++; uwAdd(pwp,dt,cellNum(r[c.fr]),cellNum(r[c.fu]),cellNum(r[c.lr]),cellNum(r[c.lu])); }
     }
     if(!n) continue;
-    return {...uwSplit(all), rows:n, tt90:uwSplit(t90), tt85:uwSplit(t85), byDate:parseAllocByDate(wb), oldDate:parseOldDate(wb), from:name};
+    return {...uwSplit(all), rows:n, tt90:uwSplit(t90), tt85:uwSplit(t85), pwp:nP?uwSplit(pwp):null, byDate:parseAllocByDate(wb), oldDate:parseOldDate(wb), from:name};
   }
   throw new Error("Couldn't find the unwaved detail columns (DT, TT, FCReaches, FCUnits, LTCReaches, LTCUnits) or the pivot table.");
 }
