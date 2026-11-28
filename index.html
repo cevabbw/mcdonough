@@ -1132,11 +1132,13 @@ function hoursFor(d,skip){
     const day=f.laborHoursDay||prevWorkday(k), h=num(f.laborHours); if(day===d&&h>0) return h; }
   return null;
 }
-// The week (Sunday–Saturday) the hours list on WIP Entry shows: the week of the last scorecard day before the entry.
+// The week (Sunday–Saturday) the hours list on WIP Entry shows.
 // hrsBack = how many weeks back the list is showing (0 = the latest week; it never goes forward past that).
 let hrsBack=0, hrsBackFor=null;
 function hoursWeek(d){ if(hrsBackFor!==d){ hrsBack=0; hrsBackFor=d; }
-  const x=parseIso(hoursDay(d)); x.setDate(x.getDate()-x.getDay()-7*hrsBack); const s0=iso(x); return [0,1,2,3,4,5,6].map(i=>addDays(s0,i)); }
+  // By the calendar: the week of the last working day before the entry (Monday shows last week, Tuesday on shows this week),
+  // or of a later worked day the scorecard has (a worked Sunday).
+  const pw=prevWorkday(d), hd=hoursDay(d), x=parseIso(hd>pw?hd:pw); x.setDate(x.getDate()-x.getDay()-7*hrsBack); const s0=iso(x); return [0,1,2,3,4,5,6].map(i=>addDays(s0,i)); }
 const dayUnits=x=>{ const r=DATA[x]; if(!r) return null; const v=[r.u1,r.u2,r.ou1,r.ou2].filter(z=>z!=null); return v.length?v.reduce((t,z)=>t+z,0):null; };
 function hoursList(d){
   const wk=hoursWeek(d), f=AF();
