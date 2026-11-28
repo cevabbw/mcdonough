@@ -356,6 +356,21 @@ body{background-color:#f3f6fd;
 .ad-sub th,.ad-sub td{white-space:nowrap;}
 .ad-sub tr.first td{border-top:1px solid var(--card-border);}
 .ad-sub tr.ad-subt td{font-weight:700;color:var(--text-dim);}
+
+/* Weekly hours list on WIP Entry */
+.hrs-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 6px;}
+.hrs-nav .btn{padding:5px 10px;font-size:12px;}
+.hrs-now{font-size:12px;font-weight:700;color:var(--text-dim);padding:5px 4px;}
+.am-card h3 small{font-weight:600;color:var(--text-dim);font-size:11px;margin-left:6px;text-transform:none;letter-spacing:0;}
+.hrs-wk{display:flex;flex-direction:column;}
+.hrs-row{display:grid;grid-template-columns:72px 92px 1fr auto;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--card-border);font-size:13px;}
+.hrs-row .d{font-weight:700;}
+.hrs-row .u{color:var(--text-dim);font-size:12px;}
+.hrs-row .p{font-weight:700;font-size:12px;white-space:nowrap;}
+.hrs-row .am-in{width:100%;}
+.hrs-row.need .d{color:#c0392b;}
+.hrs-row.need .am-in{border-color:#e8a33d;background:#fff8ec;}
+.hrs-row.fut{opacity:.45;}
 </style>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -714,6 +729,7 @@ const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+
 const parseIso = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
 const addDays = (s,n) => { const d=parseIso(s); d.setDate(d.getDate()+n); return iso(d); };
 const longDate = s => parseIso(s).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+const shortDay = s => parseIso(s).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
 const shortDate = s => parseIso(s).toLocaleDateString("en-US",{month:"short",day:"numeric"});
 
 // value for one shift (s = 0 or 1)
@@ -1094,14 +1110,49 @@ function renderRecap(box,days){
     +deptHead(DEPT.ob,"Outbound")+deptGrid(ob,ob.length)
     +recapTotals(days,multi);
 }
-// Hours worked on day D are typed on WIP Entry the next working day (Monday's entry holds Friday's hours).
-function hoursFor(d){
-  for(const k of Object.keys(MORNING).sort()){
-    if(k<=d) continue;
-    if(prevWorkday(k)>d) break;
-    const h=num(MORNING[k]&&MORNING[k].form&&MORNING[k].form.laborHours); if(h>0) return h;
-  }
+// Hours worked on a day are typed on WIP Entry a later morning. Every day the scorecard has units for gets an hours box:
+// the main box is for the last scorecard day before the entry (Saturday when Saturday was worked), and any earlier
+// scorecard day that week still missing hours gets its own box. Entries saved before this change hold the previous
+// weekday's hours (Monday's entry = Friday).
+const hrsKey=d=>"hrs_"+d.replace(/-/g,"");
+const hasUnits=d=>{ const r=DATA[d]; return !!r&&[r.u1,r.u2,r.ou1,r.ou2].some(v=>v!=null); };
+function hoursDay(d){ const lo=addDays(d,-7); return sortedDates().filter(x=>x<d&&x>=lo&&hasUnits(x)).pop()||prevWorkday(d); }
+function hoursIn(k,d,f){
+  f=f||(MORNING[k]&&MORNING[k].form); if(!f) return null;
+  const x=num(f[hrsKey(d)]); if(x>0) return x;
+  const day=f.laborHoursDay||prevWorkday(k), h=num(f.laborHours);
+  return (day===d&&h>0)?h:null;
+}
+function hoursFor(d,skip){
+  const ks=Object.keys(MORNING).sort().filter(k=>k>d&&k!==skip);
+  // Hours typed in the weekly list: the newest entry that has this day wins (so a correction replaces the old number).
+  for(let i=ks.length-1;i>=0;i--){ const f=MORNING[ks[i]]&&MORNING[ks[i]].form, x=f&&num(f[hrsKey(d)]); if(x>0) return x; }
+  // Entries saved before the weekly list: one "hours worked yesterday" number.
+  for(const k of ks){ if(k>addDays(d,10)) break; const f=MORNING[k]&&MORNING[k].form; if(!f) continue;
+    const day=f.laborHoursDay||prevWorkday(k), h=num(f.laborHours); if(day===d&&h>0) return h; }
   return null;
+}
+// The week (Sunday–Saturday) the hours list on WIP Entry shows: the week of the last scorecard day before the entry.
+// hrsBack = how many weeks back the list is showing (0 = the latest week; it never goes forward past that).
+let hrsBack=0, hrsBackFor=null;
+function hoursWeek(d){ if(hrsBackFor!==d){ hrsBack=0; hrsBackFor=d; }
+  const x=parseIso(hoursDay(d)); x.setDate(x.getDate()-x.getDay()-7*hrsBack); const s0=iso(x); return [0,1,2,3,4,5,6].map(i=>addDays(s0,i)); }
+const dayUnits=x=>{ const r=DATA[x]; if(!r) return null; const v=[r.u1,r.u2,r.ou1,r.ou2].filter(z=>z!=null); return v.length?v.reduce((t,z)=>t+z,0):null; };
+function hoursList(d){
+  const wk=hoursWeek(d), f=AF();
+  return `<div class="hrs-wk">${wk.map(x=>{
+    const k=hrsKey(x), mine=num(f[k]), saved=hoursFor(x,d), v=mine>0?mine:saved, u=dayUnits(x), future=x>=d;
+    const lab=parseIso(x).toLocaleDateString("en-US",{weekday:"short",month:"numeric",day:"numeric"});
+    const inp=amView?(v>0?`<span class="vv">${fmt(v,v%1?1:0)}</span>`:'<span class="miss">&mdash;</span>')
+      :`<input class="am-in" data-f="${k}" type="number" inputmode="decimal" step="any" min="0" value="${v>0?v:""}" aria-label="Hours worked ${esc(lab)}"${future||canWrite===false||!mdb?" disabled":""}>`;
+    const need=!future&&u!=null&&!(v>0);
+    return `<div class="hrs-row${need?" need":""}${future?" fut":""}"><div class="d">${esc(lab)}</div><div class="i">${inp}</div>
+      <div class="u">${u!=null?fmt(u)+" units":future?"":"no scorecard"}</div><div class="p" data-c="uph_${k}">&mdash;</div></div>`; }).join("")}</div>`;
+}
+// Scorecard days in the 3 days before the main hours day with no hours saved on another entry (this entry's own value still shows).
+function missingHourDays(d){
+  const hd=hoursDay(d), lo=addDays(hd,-3);   // e.g. Monday's entry after a worked Saturday also catches Friday
+  return sortedDates().filter(x=>x<hd&&x>=lo&&hasUnits(x)&&!hoursFor(x,d));
 }
 // Total units picked = LTC units picked + outbound units picked. UPH = total units / hours worked.
 function recapTotals(days,multi){
@@ -1850,8 +1901,11 @@ function renderMorning(box,entry){
     ${dropLog.length?`<ul>${dropLog.map(x=>`<li class="${x.ok?"ok":"bad"}">${x.ok?"&#10003;":"&#10007;"} ${esc(x.name)} &rarr; ${esc(x.what)}</li>`).join("")}</ul>`:""}</div>`}
   <div class="am-grid entry-grid">
     <div class="ecol">
-    <div class="am-card" style="--acc:#e8a33d"><h3>Previous day</h3>
-      ${inRow("laborHours","Hours worked yesterday","Total for "+esc(longDate(prevWorkday(d)))+". Used for UPH on the Previous Day Recap")}
+    <div class="am-card" style="--acc:#e8a33d"><h3>Hours worked<small>${esc(shortDay(hoursWeek(d)[0]))} \u2013 ${esc(shortDay(hoursWeek(d)[6]))}</small></h3>
+      <div class="hrs-nav"><button type="button" class="btn" id="hrsPrev">&lsaquo; Previous week</button>
+        ${hrsBack>0?`<button type="button" class="btn" id="hrsNow">Latest week &rsaquo;</button>`:'<span class="hrs-now">Latest week</span>'}</div>
+      ${hoursList(d)}
+      <p class="modal-note" style="margin:6px 0 0">Total hours for each day. Days the scorecard has numbers for need hours (highlighted). Used for UPH on the Previous Day Recap and the Flash.</p>
     </div>
     <div class="am-card" style="--acc:#a78bfa"><h3>Inbound</h3>
       ${inRow("ibLives","Lives","Scheduled appointments")}
@@ -1895,8 +1949,12 @@ function renderMorning(box,entry){
   box.querySelectorAll(".am-in[data-f]").forEach(el=>el.addEventListener("input",()=>{
     const f=el.dataset.f; amForm[f]=el.type==="number"?(el.value===""?"":+el.value):el.value;
     markDraft(current); amStatus();
+    if(/^hrs_/.test(f)){ const row=el.closest(".hrs-row"); if(row&&num(el.value)>0) row.classList.remove("need"); updateComputed(); }
   }));
   wireAlloc(box);
+  { const hp=document.getElementById("hrsPrev"), hn=document.getElementById("hrsNow");
+    if(hp) hp.onclick=()=>{ hrsBack++; render(); };
+    if(hn) hn.onclick=()=>{ hrsBack=0; render(); }; }
   document.getElementById("amSave").onclick=saveMorning;
   document.getElementById("uwBtn").onclick=()=>document.getElementById("uwIn").click();
   document.getElementById("uwIn").addEventListener("change",loadUnwaved);
@@ -1948,7 +2006,9 @@ function updateComputed(){
   setC("ltcGoal",fmt(g.ltc)); setC("ltcGoal1",fmt(g.ltc1)); setC("ltcGoal2",fmt(g.ltc2));
   setC("obTotal",fmt(obTot)); setC("obTotalU",fmt(both(a.obCarryUnits,uw.obUnits))); days("obDays",obTot,g.ob);
   setC("obCap",fmt(g.ob)); setC("sorterCap",fmt(g.sorter)); setC("lsCap",fmt(g.ls));
-  const lh=num(f.laborHours); setC("uph",(a.unitsPrev!=null&&lh>0)?fmt(a.unitsPrev/lh):"—");
+  const hd=hoursDay(current), hOf=x=>{ const m=num(f[hrsKey(x)]); return m>0?m:hoursFor(x,current); };
+  { const lh=hOf(hd), hu=dayUnits(hd); setC("uph",(hu!=null&&lh>0)?fmt(hu/lh):"—"); }
+  for(const x of hoursWeek(current)){ const h=hOf(x), u=dayUnits(x); setC("uph_"+hrsKey(x),(u!=null&&h>0)?fmt(u/h,1)+" UPH":"—"); }
   const loc=num(f.locOnHand), sg=num(f.availSingle), mu=num(f.availMulti), pp=num(f.palletPos);
   const filled=(loc!=null&&sg!=null&&mu!=null)?loc-sg-mu:null;
   setC("filled",fmt(filled)); setC("storPct",(filled!=null&&pp>0)?Math.round(filled/pp*100)+"%":"—");
@@ -2233,6 +2293,7 @@ async function loadUnwavedFile(f){
 async function saveMorning(){
   if(!mdb||amSaving) return;
   const d=current, f={...amForm};
+  for(const k of Object.keys(f)) if(/^hrs_\d{8}$/.test(k)&&!(num(f[k])>0)) delete f[k];   // blank hours boxes are not saved
   const al=allocRows(f).filter(allocFilled).map(r=>({date:r.date||"",dt:(r.dt||"").trim(),reason:(r.reason||"").trim()}));
   if(al.length) f.oldestAlloc=al; else delete f.oldestAlloc;
   const body={form:f, goals:goalsOf(f), savedAt:new Date().toISOString()};
@@ -2289,7 +2350,7 @@ window.addEventListener("fb-auth",e=>{
     DATA={}; MORNING={}; SOURCE=""; ABSENT=[]; SCHED=null; SETTINGS={}; try{ localStorage.removeItem(STORE_KEY); }catch(err){}
     amDate=null; render(); showAuth("signin"); return;
   }
-  FB.update({["users/"+fbUser.uid+"/email"]:fbUser.email, ["users/"+fbUser.uid+"/name"]:fbUser.name, ["users/"+fbUser.uid+"/lastSignIn"]:new Date().toISOString()}).catch(()=>{});
+  FB.write("users/"+fbUser.uid,{email:fbUser.email, name:fbUser.name, lastSignIn:new Date().toISOString()}).catch(()=>{});
   fbOff.push(FB.listen("tabs/"+fbUser.uid, v=>{ myTabs=v&&typeof v==="object"&&Object.keys(v).length?v:null; applyTabs(); }, ()=>{}));
   fbOff.push(FB.listen("access/"+fbUser.uid, role=>{
     myRole=role;
@@ -2500,7 +2561,7 @@ document.getElementById("signupForm").addEventListener("submit",async e=>{
   try{
     const u=await FB.signUp(email,p1,name);
     const at=new Date().toISOString();
-    await FB.update({["users/"+u.uid+"/email"]:u.email, ["users/"+u.uid+"/name"]:name, ["users/"+u.uid+"/lastSignIn"]:at}).catch(()=>{});
+    await FB.write("users/"+u.uid,{email:u.email, name, lastSignIn:at}).catch(()=>{});
     await FB.write("requests/"+u.uid,{email:u.email, name, at}).catch(()=>{});
     if(fbUser&&fbUser.uid===u.uid) fbUser.name=name;
     document.getElementById("suPass").value=""; document.getElementById("suPass2").value=""; msg.textContent="";
