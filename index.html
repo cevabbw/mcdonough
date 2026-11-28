@@ -2352,7 +2352,7 @@ window.addEventListener("fb-auth",e=>{
     DATA={}; MORNING={}; SOURCE=""; ABSENT=[]; SCHED=null; SETTINGS={}; try{ localStorage.removeItem(STORE_KEY); }catch(err){}
     amDate=null; render(); showAuth("signin"); return;
   }
-  FB.write("users/"+fbUser.uid,{email:fbUser.email, name:fbUser.name, lastSignIn:new Date().toISOString()}).catch(()=>{});
+  FB.update({["users/"+fbUser.uid+"/email"]:fbUser.email,["users/"+fbUser.uid+"/name"]:fbUser.name,["users/"+fbUser.uid+"/lastSignIn"]:new Date().toISOString()}).catch(()=>{});
   fbOff.push(FB.listen("tabs/"+fbUser.uid, v=>{ myTabs=v&&typeof v==="object"&&Object.keys(v).length?v:null; applyTabs(); }, ()=>{}));
   fbOff.push(FB.listen("access/"+fbUser.uid, role=>{
     myRole=role;
@@ -2563,7 +2563,7 @@ document.getElementById("signupForm").addEventListener("submit",async e=>{
   try{
     const u=await FB.signUp(email,p1,name);
     const at=new Date().toISOString();
-    await FB.write("users/"+u.uid,{email:u.email, name, lastSignIn:at}).catch(()=>{});
+    await FB.update({["users/"+u.uid+"/email"]:u.email,["users/"+u.uid+"/name"]:name,["users/"+u.uid+"/lastSignIn"]:at}).catch(()=>{});
     await FB.write("requests/"+u.uid,{email:u.email, name, at}).catch(()=>{});
     if(fbUser&&fbUser.uid===u.uid) fbUser.name=name;
     document.getElementById("suPass").value=""; document.getElementById("suPass2").value=""; msg.textContent="";
